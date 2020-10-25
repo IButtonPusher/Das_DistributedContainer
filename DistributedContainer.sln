@@ -1,0 +1,35 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30517.126
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Das.Container.Interfaces.Shared", "Das.Container.Interfaces.Shared\Das.Container.Interfaces.Shared.shproj", "{E347B4BA-D388-4413-BC57-6FA57FCF6512}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Das.Container.Shared", "Das.Container.Shared\Das.Container.Shared.shproj", "{98188C4B-E019-4C51-AB63-A50F36EFDABF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Das.DistributedContainer", "Das.DistributedContainer\Das.DistributedContainer.csproj", "{A7B727F5-418A-403F-A2F2-14F409B993E6}"
+EndProject
+Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Das.Container.Shared\Das.Container.Shared.projitems*{98188c4b-e019-4c51-ab63-a50f36efdabf}*SharedItemsImports = 13
+		Das.Container.Interfaces.Shared\Das.Container.Interfaces.Shared.projitems*{a7b727f5-418a-403f-a2f2-14f409b993e6}*SharedItemsImports = 5
+		Das.Container.Shared\Das.Container.Shared.projitems*{a7b727f5-418a-403f-a2f2-14f409b993e6}*SharedItemsImports = 5
+		Das.Container.Interfaces.Shared\Das.Container.Interfaces.Shared.projitems*{e347b4ba-d388-4413-bc57-6fa57fcf6512}*SharedItemsImports = 13
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A7B727F5-418A-403F-A2F2-14F409B993E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7B727F5-418A-403F-A2F2-14F409B993E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7B727F5-418A-403F-A2F2-14F409B993E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7B727F5-418A-403F-A2F2-14F409B993E6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {50FDBD97-4169-48B6-A1F1-FD850ED3DDE5}
+	EndGlobalSection
+EndGlobal
