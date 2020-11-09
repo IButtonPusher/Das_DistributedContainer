@@ -2,9 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
+
 using System.Threading.Tasks;
 using Das.Container.Shared;
+
+#if NET40
+using SemaphoreSlim = System.Threading.AsyncSemaphore;
+#else
+using System.Threading;
+#endif
 
 namespace Das.Container
 {
@@ -23,39 +29,45 @@ namespace Das.Container
         public virtual Task<T> ResolveAsync<T>()
         {
             return ResolveAsync<T>(_emptyCtorParams);
+        }
 
-            //var typeI = typeof(T);
-            //var typeO = await GetMappingType(typeI);
-
-            //return ResolveAsync<T, T>();
+        public T Resolve<T>()
+        {
+            return Resolve<T>(_emptyCtorParams);
         }
 
         public async Task<T> ResolveAsync<T>(params Object[] ctorArgs)
         {
             var typeI = typeof(T);
-            var typeO = await GetMappingType(typeI);
+            var typeO = await GetMappingTypeAsync(typeI);
 
             return await ResolveAsyncImpl<T>(typeI, typeO, ctorArgs);
         }
 
+        public T Resolve<T>(params Object[] ctorArgs)
+        {
+            var typeI = typeof(T);
+            var typeO = GetMappingType(typeI);
+
+            return ResolveImpl<T>(typeI, typeO, ctorArgs);
+        }
+
+
         public async Task ResolveToAsync<TInterface, TObject>() 
             where TObject : class, TInterface
         {
-            await RunLocked(typeof(TObject), o => _typeMappings[typeof(TInterface)] = o);
+            await RunLockedAsync(typeof(TObject), o => _typeMappings[typeof(TInterface)] = o);
         }
 
-        public virtual Task<TInterface> ResolveAsync<TObject, TInterface>()
-            where TObject : TInterface
-        {
-            return ResolveAsyncImpl<TObject, TInterface>(_emptyCtorParams);
-        }
 
         private async Task<TInterface> ResolveAsyncImpl<TInterface>(Type typeI,
-                                                                             Type typeO,
-                                                                             Object[] ctorParams)
+                                                                    Type typeO,
+                                                                    Object[] ctorParams)
         {
             var res = await RunLockedAsync(typeI, typeO, 
-                async (i, o) => await ResolveAsyncNoLockImpl(i, o, ctorParams));
+                async (i, o) => await ResolveAsyncNoLockImpl(i, o, ctorParams)
+                    .ConfigureAwait(false))
+                .ConfigureAwait(false);
 
             if (res is TInterface good)
                 return good;
@@ -63,15 +75,12 @@ namespace Das.Container
             throw new NullReferenceException("Unable to resolve an object of type " + typeI);
         }
 
-        private Task<TInterface> ResolveAsyncImpl<TObject, TInterface>(Object[] ctorParams)
-            where TObject : TInterface
+        private TInterface ResolveImpl<TInterface>(Type typeI,
+                                                                    Type typeO,
+                                                                    Object[] ctorParams)
         {
-            var typeI = typeof(TInterface);
-            var typeO = typeof(TObject);
-
-            return ResolveAsyncImpl<TInterface>(typeI, typeO, ctorParams);
+            return ResolveAsyncImpl<TInterface>(typeI, typeO, ctorParams).Result;
         }
-
 
         private async Task<Object?> ResolveAsyncNoLockImpl(Type typeI,
                                                            Type typeO,
@@ -91,7 +100,17 @@ namespace Das.Container
 
             if (ctors.Length != 1)
             {
-                ctor = ctors.FirstOrDefault(c => c.GetCustomAttribute<ContainerConstructorAttribute>() != null);
+                var dCtors = from c in ctors
+                    let attrs = c.GetCustomAttributes(
+                        typeof(ContainerConstructorAttribute), 
+                        true).FirstOrDefault()
+                    where c != null
+                    select c;
+
+                ctor = dCtors.FirstOrDefault();
+                
+                // !4.0
+                //ctor = ctors.FirstOrDefault(c => c.GetCustomAttribute<ContainerConstructorAttribute>() != null);
 
                 if (ctor == null)
                     throw new InvalidOperationException(
@@ -121,7 +140,7 @@ namespace Das.Container
                 else
                 {
                     var pMap = GetMappingNoLock(pType);
-                    pObj = await ResolveAsyncNoLockImpl(pType, pMap, _emptyCtorParams);
+                    pObj = await ResolveAsyncNoLockImpl(pType, pMap, _emptyCtorParams).ConfigureAwait(false);
                 }
 
                 switch (pObj)
@@ -136,43 +155,66 @@ namespace Das.Container
             var res = ctor.Invoke(args);
 
             if (res is IInitializeAsync initAsync)
-                await initAsync.InitializeAsync();
+                await initAsync.InitializeAsync().ConfigureAwait(false);
 
             _containedObjects[typeI] = res;
 
             return res;
         }
 
-        public virtual async Task ResolveToAsync<TInterface, TObject>(TObject obj)
+        public virtual void ResolveTo<TInterface>(TInterface instance)
+        {
+            RunLockedAction(instance, o => _containedObjects[typeof(TInterface)] = o!);
+        }
+
+        public virtual void ResolveTo<TInterface, TObject>()
             where TObject : class, TInterface
         {
-            await RunLocked(obj, o => _containedObjects[typeof(TInterface)] = o);
+            RunLockedAction(typeof(TObject), o => _typeMappings[typeof(TInterface)] = o);
+        }
+
+        public virtual async Task ResolveToAsync<TInterface>(TInterface obj)
+        {
+            await RunLockedAsync(obj, o => _containedObjects[typeof(TInterface)] = o!).
+                ConfigureAwait(false);
         }
 
         public async Task<Object> ResolveAsync(Type type)
         {
-            var typeO = await GetMappingType(type);
+            var typeO = await GetMappingTypeAsync(type).ConfigureAwait(false);
 
-            return await ResolveAsyncImpl<Object>(type, typeO, _emptyCtorParams);
-
-            //var res = await RunLockedAsync(type, typeO, 
-            //    async (i, o) => await ResolveAsyncNoLockImpl(i, o));
-
-            //if (res == null)
-            //    throw new NullReferenceException("Unable to resolve an object of type " + type);
-
-            //return res;
+            return await ResolveAsyncImpl<Object>(type, typeO, _emptyCtorParams).ConfigureAwait(false);
         }
 
-        private async Task<Type> GetMappingType(Type type)
+        public Object Resolve(Type type)
         {
-            return await RunLocked(type, GetMappingNoLock);
+            var typeO = GetMappingType(type);
+            return ResolveImpl<Object>(type, typeO, _emptyCtorParams);
+        }
+
+
+        private async Task<Type> GetMappingTypeAsync(Type type)
+        {
+            return await RunLockedAsync(type, GetMappingNoLock).ConfigureAwait(false);
+        }
+
+        private Type GetMappingType(Type type)
+        {
+            return RunLockedFunc(type, GetMappingNoLock);
         }
 
         private Type GetMappingNoLock(Type tIn)
         {
             if (_typeMappings.TryGetValue(tIn, out var good))
                 return good;
+
+            foreach (var kvp in _typeMappings)
+            {
+                if (tIn.IsAssignableFrom(kvp.Key))
+                {
+                    return kvp.Value;
+                }
+            }
 
             return tIn;
         }
@@ -181,7 +223,7 @@ namespace Das.Container
         private async Task RunLocked<TInput>(TInput input, 
                                              Action<TInput> action)
         {
-            await _lockContained.WaitAsync();
+            await _lockContained.WaitAsync().ConfigureAwait(false);
 
             try
             {
@@ -193,10 +235,10 @@ namespace Das.Container
             }
         }
 
-        private async Task<TOutput> RunLocked<TInput, TOutput>(TInput input, 
+        private async Task<TOutput> RunLockedAsync<TInput, TOutput>(TInput input, 
                                                               Func<TInput, TOutput> func)
         {
-            await _lockContained.WaitAsync();
+            await _lockContained.WaitAsync().ConfigureAwait(false);
 
             try
             {
@@ -208,15 +250,45 @@ namespace Das.Container
             }
         }
 
+        private TOutput RunLockedFunc<TInput, TOutput>(TInput input,
+                                                       Func<TInput, TOutput> func)
+        {
+            _lockContained.Wait();
+
+            try
+            {
+                return func(input);
+            }
+            finally
+            {
+                _lockContained.Release();
+            }
+        }
+
+        private void RunLockedAction<TInput>(TInput input, 
+                                             Action<TInput> func)
+        {
+            _lockContained.Wait();
+
+            try
+            {
+                func(input);
+            }
+            finally
+            {
+                _lockContained.Release();
+            }
+        }
+
         // ReSharper disable once UnusedMember.Local
         private async Task<TOutput> RunLockedAsync<TInput1, TOutput>(TInput1 input1,
                                                                      Func<TInput1, Task<TOutput>> action)
         {
-            await _lockContained.WaitAsync();
+            await _lockContained.WaitAsync().ConfigureAwait(false);
 
             try
             {
-                return await action(input1);
+                return await action(input1).ConfigureAwait(false);
             }
             finally
             {
@@ -228,11 +300,11 @@ namespace Das.Container
                                                             TInput2 input2,
                                                   Func<TInput1, TInput2, Task<TOutput>> action)
         {
-            await _lockContained.WaitAsync();
+            await _lockContained.WaitAsync().ConfigureAwait(false);
 
             try
             {
-                return await action(input1, input2);
+                return await action(input1, input2).ConfigureAwait(false);
             }
             finally
             {
