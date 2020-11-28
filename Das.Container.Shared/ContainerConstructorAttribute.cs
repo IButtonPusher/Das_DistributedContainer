@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Threading.Tasks;
 
-namespace Das.Container.Shared
+namespace Das.Container
 {
-    [AttributeUsage(AttributeTargets.Constructor, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Constructor)]
     // ReSharper disable once ClassNeverInstantiated.Global
     public class ContainerConstructorAttribute : Attribute
     {

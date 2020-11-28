@@ -9,7 +9,13 @@
     <Import_RootNamespace>Das.Container.Shared</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AsyncResolver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BaseResolver.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConstructorWorker.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ContainerConstructorAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MappingCompletionSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TypeMappingCollection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SemaphoreExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SyncResolver.cs" />
   </ItemGroup>
 </Project>

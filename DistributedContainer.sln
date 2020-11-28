@@ -9,10 +9,14 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Das.Container.Shared", "Das
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Das.Container", "Das.DistributedContainer\Das.Container.csproj", "{A7B727F5-418A-403F-A2F2-14F409B993E6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Das.Container.Interfaces", "Das.Container.Interfaces\Das.Container.Interfaces.csproj", "{8F974F88-BA90-4D88-97FE-12C82EEEDD4C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Das.Container.Interfaces", "Das.Container.Interfaces\Das.Container.Interfaces.csproj", "{8F974F88-BA90-4D88-97FE-12C82EEEDD4C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Container.Tests", "Container.Tests\Container.Tests.csproj", "{654FA3FA-976E-4CF5-A9D2-110F599AD3DC}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Das.Container.Interfaces.Shared\Das.Container.Interfaces.Shared.projitems*{654fa3fa-976e-4cf5-a9d2-110f599ad3dc}*SharedItemsImports = 4
+		Das.Container.Shared\Das.Container.Shared.projitems*{654fa3fa-976e-4cf5-a9d2-110f599ad3dc}*SharedItemsImports = 4
 		Das.Container.Interfaces.Shared\Das.Container.Interfaces.Shared.projitems*{8f974f88-ba90-4d88-97fe-12c82eeedd4c}*SharedItemsImports = 5
 		Das.Container.Shared\Das.Container.Shared.projitems*{98188c4b-e019-4c51-ab63-a50f36efdabf}*SharedItemsImports = 13
 		Das.Container.Shared\Das.Container.Shared.projitems*{a7b727f5-418a-403f-a2f2-14f409b993e6}*SharedItemsImports = 5
@@ -24,13 +28,14 @@ Global
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{A7B727F5-418A-403F-A2F2-14F409B993E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A7B727F5-418A-403F-A2F2-14F409B993E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A7B727F5-418A-403F-A2F2-14F409B993E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A7B727F5-418A-403F-A2F2-14F409B993E6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{8F974F88-BA90-4D88-97FE-12C82EEEDD4C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8F974F88-BA90-4D88-97FE-12C82EEEDD4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8F974F88-BA90-4D88-97FE-12C82EEEDD4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8F974F88-BA90-4D88-97FE-12C82EEEDD4C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{654FA3FA-976E-4CF5-A9D2-110F599AD3DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{654FA3FA-976E-4CF5-A9D2-110F599AD3DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{654FA3FA-976E-4CF5-A9D2-110F599AD3DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
