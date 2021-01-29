@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Container.Tests.Interfaces;
+
 // ReSharper disable All
 
 namespace Container.Tests.Implementations
 {
     public class TestLogSizeProvider : ILogSizeProvider
     {
-        private readonly ILog _logger;
-        private readonly ILogFileProvider _logFileProvider;
-
         public TestLogSizeProvider(ILog logger,
                                    ILogFileProvider logFileProvider)
         {
@@ -25,5 +23,8 @@ namespace Container.Tests.Implementations
 
             return file.Length;
         }
+
+        private readonly ILogFileProvider _logFileProvider;
+        private readonly ILog _logger;
     }
 }

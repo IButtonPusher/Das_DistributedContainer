@@ -36,6 +36,7 @@
     <WarningLevel>4</WarningLevel>
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
+    <CodeAnalysisRuleSet>..\Container.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -49,13 +50,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsynchronousTests.cs" />
-    <Compile Include="Implementations\NullLog.cs" />
+    <Compile Include="Implementations\Logger.cs" />
+    <Compile Include="Implementations\MegaLog.cs" />
+    <Compile Include="Implementations\NeedLogger1.cs" />
+    <Compile Include="Implementations\NeedMegaLogger.cs" />
     <Compile Include="Implementations\TestLogFileProvider.cs" />
     <Compile Include="Implementations\TestLogSizeProvider.cs" />
     <Compile Include="Interfaces\ILog.cs" />
     <Compile Include="Interfaces\ILogFileProvider.cs" />
     <Compile Include="Interfaces\ILogSizeProvider.cs" />
     <Compile Include="Interfaces\IMegaLog.cs" />
+    <Compile Include="Interfaces\INeedLogger1.cs" />
+    <Compile Include="Interfaces\INeedMegaLogger.cs" />
     <Compile Include="SynchronousTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -73,6 +73,27 @@ namespace Das.Container
         }
 
 
+        public static async Task<TOutput> RunLockedFuncAsync<TInput1, TInput2, TInput3, TOutput>(
+            this SemaphoreSlim semaphore,
+            TInput1 input1,
+            TInput2 input2,
+            TInput3 input3,
+            Func<TInput1, TInput2, TInput3, TOutput> func,
+            CancellationToken cancellationToken)
+        {
+            await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                return func(input1, input2, input3);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        }
+
+
         public static async Task<TOutput> RunLockedFuncAsync<TInput1, TInput2, TInput3, TInput4, TInput5, TOutput>(
             this SemaphoreSlim semaphore,
             TInput1 input1,

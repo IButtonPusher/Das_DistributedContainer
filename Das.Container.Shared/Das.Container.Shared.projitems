@@ -6,13 +6,25 @@
     <SharedGUID>98188c4b-e019-4c51-ab63-a50f36efdabf</SharedGUID>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <Import_RootNamespace>Das.Container.Shared</Import_RootNamespace>
+    <Import_RootNamespace>Das.Container</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)AsyncResolver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BaseResolver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConstructorWorker.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ContainerConstructorAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Invocations\InstanceCompletionSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Invocations\IPollyAction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Invocations\IPollyAction{T}.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Invocations\IPollyFunc{T}.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Invocations\PollyAction{T2}.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Invocations\PollyFunc{T1TR}.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Invocations\PollyFunc{T2TR}.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Invocations\PollyFunc{T4TR}.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Invocations\PollyLateAction{T2}.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Invocations\PollyAction{T}.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Invocations\PollyLateAction{T4}.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LoadAheadResolver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MappingCompletionSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TypeMappingCollection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SemaphoreExtensions.cs" />

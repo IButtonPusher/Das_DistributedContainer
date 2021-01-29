@@ -4,16 +4,17 @@ using Container.Tests.Interfaces;
 
 namespace Container.Tests.Implementations
 {
-    public class NullLog : IMegaLog
+    public class Logger : ILog
     {
-        public void Log(String text)
+        public Logger()
         {
-            
+            TimeInstantiated++;
         }
 
-        public void LogEx(String text)
+        public void Log(String text)
         {
-            
         }
+
+        public static Int32 TimeInstantiated;
     }
 }

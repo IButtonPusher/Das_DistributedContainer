@@ -20,6 +20,11 @@ namespace Das.Container
         public T Resolve<T>(params Object[] ctorArgs)
         {
             var typeI = typeof(T);
+
+            if (!typeI.IsAbstract && !typeI.IsInterface)
+                //trying to resolve a concrete type => no mapping needed
+                return ResolveImpl<T>(typeI, typeI, ctorArgs);
+
             var typeO = EnsureNotNull(_typeMappings.GetMapping(typeI), typeI);
 
             return ResolveImpl<T>(typeI, typeO, ctorArgs);
@@ -32,7 +37,7 @@ namespace Das.Container
             var instType = oInstance.GetType();
 
             _typeMappings.SetMapping(typeof(TInterface), instType, true);
-            __instanceMappings.SetMapping(typeof(TInterface), oInstance, true);
+            _instanceMappings.SetMapping(typeof(TInterface), oInstance, true);
         }
 
         public virtual void ResolveTo<TInterface, TObject>()
@@ -42,10 +47,13 @@ namespace Das.Container
             _typeMappings.SetMapping(typeof(TInterface), instType, true);
         }
 
-        public Object Resolve(Type type)
+        public Object Resolve(Type typeI)
         {
-            var typeO = EnsureNotNull(_typeMappings.GetMapping(type), type);
-            return ResolveImpl<Object>(type, typeO, _emptyCtorParams);
+            if (!typeI.IsAbstract && !typeI.IsInterface)
+                return ResolveImpl<Object>(typeI, typeI, _emptyCtorParams);
+
+            var typeO = EnsureNotNull(_typeMappings.GetMapping(typeI), typeI);
+            return ResolveImpl<Object>(typeI, typeO, _emptyCtorParams);
         }
 
         public Boolean TryResolve<TInstance>(Type type,
@@ -58,8 +66,44 @@ namespace Das.Container
                 return false;
             }
 
-            resolved = ResolveImpl<TInstance>(type, typeO, _emptyCtorParams);
-            return resolved != null;
+            //resolved = ResolveImpl<TInstance>(type, typeO, _emptyCtorParams);
+            var oresolved = ResolveObjectImpl(type, typeO, _emptyCtorParams);
+
+            if (oresolved is TInstance good)
+            {
+                resolved = good;
+                return true;
+            }
+
+            resolved = default!;
+            return false;
+            //return resolved != null;
+        }
+
+        protected Object? ResolveObjectImpl(Type typeI,
+                                            Type typeO,
+                                            Object[] ctorParams)
+        {
+            if (TryGetContained(typeI, typeO, out var found))
+                return found;
+
+            var ctor = GetConstructor(typeO);
+            var args = GetConstructorArgs(ctor, ctorParams, false);
+            if (args == null)
+                return default;
+
+            var res = ctor.Invoke(args);
+
+            if (res is IInitializeAsync initAsync)
+            {
+                var awaitable = TaskEx.Run(async () => { await initAsync.InitializeAsync().ConfigureAwait(false); });
+                awaitable.ConfigureAwait(false);
+                awaitable.Wait();
+            }
+
+            res = _instanceMappings.SetMapping(typeI, res, false);
+
+            return res;
         }
 
         private static Type EnsureNotNull(Type? typeo,
@@ -72,8 +116,9 @@ namespace Das.Container
         }
 
 
-        private Object?[] GetConstructorArgs(ConstructorInfo ctor,
-                                             Object[] ctorParams)
+        private Object?[]? GetConstructorArgs(ConstructorInfo ctor,
+                                              Object[] ctorParams,
+                                              Boolean isThrowOnMissingMapping)
         {
             if (ctor.GetParameters().Length == 0)
                 return _emptyCtorParams;
@@ -83,8 +128,21 @@ namespace Das.Container
             foreach (var missing in ctorWorker.BuildValues())
             {
                 var pType = missing.Item2.ParameterType;
-                var pMap = EnsureNotNull(_typeMappings.GetMapping(pType), pType);
+                var mapping = _typeMappings.GetMapping(pType);
+
+                if (mapping == null && !isThrowOnMissingMapping)
+                    return default;
+
+                var pMap = EnsureNotNull(mapping, pType);
                 var pObj = ResolveObjectImpl(pType, pMap, _emptyCtorParams);
+
+                if (pObj == null)
+                {
+                    ctorWorker.NotifyValueNotAvailable(missing.Item1);
+                    return default;
+                }
+
+
                 ctorWorker.SetValue(missing.Item1, pObj);
             }
 
@@ -104,33 +162,5 @@ namespace Das.Container
 
             throw new NullReferenceException("Unable to resolve an object of type " + typeI);
         }
-
-
-        private Object? ResolveObjectImpl(Type typeI,
-                                          Type typeO,
-                                          Object[] ctorParams)
-        {
-            if (TryGetContained(typeI, typeO, out var found))
-                return found;
-
-            var ctor = GetConstructor(typeO);
-            var args = GetConstructorArgs(ctor, ctorParams);
-
-            var res = ctor.Invoke(args);
-
-            if (res is IInitializeAsync initAsync)
-            {
-                var awaitable = TaskEx.Run(async () => { await initAsync.InitializeAsync().ConfigureAwait(false); });
-                awaitable.ConfigureAwait(false);
-                awaitable.Wait();
-            }
-
-            res = __instanceMappings.SetMapping(typeI, res, false);
-
-            return res;
-        }
-
-
-      
     }
 }

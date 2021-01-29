@@ -1,11 +1,13 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Das.Container.Invocations;
 #if NET40
 using SemaphoreSlim = System.Threading.AsyncSemaphore;
 #else
-
 using TaskEx = System.Threading.Tasks.Task;
 
 // ReSharper disable ClassWithVirtualMembersNeverInherited.Global
@@ -45,8 +47,8 @@ namespace Das.Container
 
             var token = GetDefaultCancellationToken();
 
-            await _typeMappings.SetMappingAsync(typeof(TInterface), instType, true, token);
-            await __instanceMappings.SetMappingAsync(typeof(TInterface), oInstance, true, token);
+            await _typeMappings.SetMappingAsync(typeof(TInterface), instType, true, token).ConfigureAwait(false);
+            await _instanceMappings.SetMappingAsync(typeof(TInterface), oInstance, true, token).ConfigureAwait(false);
         }
 
         public Task<T> ResolveAsync<T>(CancellationToken cancellation)
@@ -57,88 +59,208 @@ namespace Das.Container
         public async Task<Object> ResolveAsync(Type type,
                                                CancellationToken cancellation)
         {
-            var typeO = await _typeMappings.GetMappingAsync(type, cancellation, true).ConfigureAwait(false);
-            typeO = EnsureNotNull(typeO, type);
+            var res = await PerformObjectResolutionAsync(type, _emptyCtorParams, cancellation,
+                true).ConfigureAwait(false);
 
-            return await ResolveAsyncImpl<Object>(type, typeO, _emptyCtorParams,
-                cancellation).ConfigureAwait(false);
+            return res ?? throw new NullReferenceException();
         }
 
-
-        private async Task<Object?[]> GetConstructorArgsAsync(ConstructorInfo ctor,
-                                                              Object[] ctorParams,
-                                                              CancellationToken cancellationToken)
+        private async Task<Object?[]?> GetConstructorArgsAsync(ConstructorInfo ctor,
+                                                               Object[] ctorParams)
         {
             if (ctor.GetParameters().Length == 0)
                 return _emptyCtorParams;
 
+            var ok = GetConstructorArgsAsyncImpl(ctor, ctorParams);
+            return await ok.ConfigureAwait(false);
+        }
+
+
+        private async Task<Object?[]?> GetConstructorArgsAsyncImpl(ConstructorInfo ctor,
+                                                                   Object[] ctorParams)
+        {
             var ctorWorker = new ConstructorWorker(ctor, ctorParams);
+            var running = new List<Task>();
 
             foreach (var missing in ctorWorker.BuildValues())
             {
-                var pType = missing.Item2.ParameterType;
-                var pMap = await _typeMappings.GetMappingAsync(pType, cancellationToken, true);
-                pMap = EnsureNotNull(pMap, pType);
-                var pObj = await ResolveObjectImplAsync(pType, pMap, _emptyCtorParams,
-                    cancellationToken).ConfigureAwait(false);
-                ctorWorker.SetValue(missing.Item1, pObj);
+                running.Add(MapResolveAndSetAsync(missing, ctorWorker));
             }
+
+
+            #if NET40
+            await TaskEx.WhenAll(running).ConfigureAwait(false);
+
+            #else
+            await Task.WhenAll(running).ConfigureAwait(false);
+
+            #endif
+
 
             var args = ctorWorker.GetParameterValues();
             return args;
         }
 
-        private async Task<T> ResolveAsyncImpl<T>(Object[] ctorArgs,
-                                                  CancellationToken cancellationToken,
-                                                  Boolean isWaitIfNotFound)
+        /// <summary>
+        ///     5.
+        /// </summary>
+        private async Task<Object?> InstantiateObjectImplAsync(Type typeI,
+                                                               Type typeO,
+                                                               Object[] ctorParams,
+                                                               CancellationToken cancellationToken)
         {
-            var typeI = typeof(T);
-            var typeO = await _typeMappings.GetMappingAsync(typeI, cancellationToken, isWaitIfNotFound);
-            typeO = EnsureNotNull(typeO, typeI);
-
-            return await ResolveAsyncImpl<T>(typeI, typeO, ctorArgs, cancellationToken);
-        }
-
-        private async Task<TInterface> ResolveAsyncImpl<TInterface>(Type typeI,
-                                                                    Type typeO,
-                                                                    Object[] ctorParams,
-                                                                    CancellationToken cancellation)
-        {
-            var res = await ResolveObjectImplAsync(typeI, typeO, ctorParams, cancellation);
-
-
-            if (res is TInterface good)
-                return good;
-
-            throw new NullReferenceException("Unable to resolve an object of type " + typeI);
-        }
-
-        private async Task<Object?> ResolveObjectImplAsync(Type typeI,
-                                                           Type typeO,
-                                                           Object[] ctorParams,
-                                                           CancellationToken cancellationToken)
-        {
-            var found = await GetContainedAsync(typeI, typeO, cancellationToken, false);
+            var found = await GetContainedAsync(typeI, typeO, cancellationToken, false)
+                .ConfigureAwait(false);
             if (found != null)
                 return found;
 
             var ctor = GetConstructor(typeO);
-            var args = await GetConstructorArgsAsync(ctor, ctorParams, cancellationToken);
+            //Debug.WriteLine("get ctor items for " + ctor.DeclaringType + " via " +
+            //                typeI);
+            var args = await GetConstructorArgsAsync(ctor, ctorParams)
+                .ConfigureAwait(false);
 
+            if (args == null)
+                return default;
 
             var res = ctor.Invoke(args);
 
             if (res is IInitializeAsync initAsync)
                 await initAsync.InitializeAsync().ConfigureAwait(false);
 
-            res = await __instanceMappings.SetMappingAsync(typeI, res, false, cancellationToken);
+            res = await _instanceMappings.SetMappingAsync(typeI, res, false, cancellationToken)
+                                         .ConfigureAwait(false);
 
             return res;
         }
 
+        /// <summary>
+        ///     Circles back to (2) PerformObjectResolutionAsync to avoid multiple instantiations
+        /// </summary>
+        private async Task MapResolveAndSetAsync(Tuple<Int32, ParameterInfo> item,
+                                                 ConstructorWorker ctorWorker)
+        {
+            try
+            {
+                var contractType = item.Item2.ParameterType;
+                Object? letsUse;
 
-       
+                if (typeof(Task).IsAssignableFrom(contractType))
+                {
+                    var gargs = contractType.GetGenericArguments();
+
+                    if (!contractType.IsGenericType || gargs.Length != 1)
+                        throw new InvalidOperationException();
+
+                    var gObj = await PerformObjectResolutionAsync(gargs[0], _emptyCtorParams,
+                        //cancellationToken, 
+                        GetDefaultCancellationToken(),
+                        true);
+                    //var gObj = await MapAndResolveAsync(gargs[0], cancellationToken).ConfigureAwait(false);
+
+                    #if NET40
+                    var gTaskFromResult = typeof(TaskEx).GetMethod(nameof(TaskEx.FromResult),
+                                              BindingFlags.Static | BindingFlags.Public)
+                                          ?? throw new MissingMethodException(nameof(TaskEx.FromResult));
+
+                    #else
+                    var gTaskFromResult = typeof(Task).GetMethod(nameof(Task.FromResult),
+                                              BindingFlags.Static | BindingFlags.Public)
+                                          ?? throw new MissingMethodException(nameof(Task.FromResult));
+
+                    #endif
+
+                    var fromResultMethod = gTaskFromResult.MakeGenericMethod(gargs[0]);
+                    letsUse = fromResultMethod.Invoke(null, new[] {gObj});
+
+                    ctorWorker.SetValue(item.Item1, letsUse);
+                }
+                else
+                    letsUse = await PerformObjectResolutionAsync(contractType, _emptyCtorParams,
+                        GetDefaultCancellationToken(),
+                        true);
+
+                ctorWorker.SetValue(item.Item1, letsUse);
+            }
+            catch (Exception ex)
+            {
+                throw new AggregateException("Exception loading parameter: " + item.Item2.Name +
+                                             " for ctor: " + ctorWorker.ConstructorBuilding.DeclaringType +
+                                             "->" + ctorWorker.ConstructorBuilding, ex);
+            }
+        }
+
+        /// <summary>
+        ///     2. Lowest method that can be called and still avoid multiple instantiations
+        /// </summary>
+        private async Task<Object> PerformObjectResolutionAsync(Type typeI,
+                                                                Object[] ctorArgs,
+                                                                CancellationToken cancellationToken,
+                                                                Boolean isWaitIfNotFound)
+        {
+            var working = _contractBuilders.GetOrAdd(typeI, t =>
+                PerformResolutionAsync(ctorArgs, cancellationToken,
+                    isWaitIfNotFound, t));
+
+            var res = await working;
+            return res;
+        }
+
+        /// <summary>
+        ///     3. Not protected by _contractBuilders. Should only be called by PerformObjectResolutionAsync
+        ///     aka once per contract type
+        /// </summary>
+        private Task<Object> PerformResolutionAsync(Object[] ctorArgs,
+                                                    CancellationToken cancellationToken,
+                                                    Boolean isWaitIfNotFound,
+                                                    Type contractType)
+        {
+            var worker = new PollyFunc<Object[], CancellationToken, Boolean, Type, Task<Object?>>(
+                PerformResolutionAsyncImpl, ctorArgs, cancellationToken, isWaitIfNotFound, contractType);
+            var completion = new InstanceCompletionSource(worker, contractType);
+            return completion.Task;
+        }
+
+        /// <summary>
+        ///     4. Not protected by _contractBuilders. Should only be called by PerformResolutionAsync
+        ///     via the PollyFunc/CompletionSource
+        /// </summary>
+        private async Task<Object?> PerformResolutionAsyncImpl(Object[] ctorArgs,
+                                                               CancellationToken cancellationToken,
+                                                               Boolean isWaitIfNotFound,
+                                                               Type typeI)
+        {
+            if (!typeI.IsAbstract && !typeI.IsInterface)
+                return await InstantiateObjectImplAsync(typeI, typeI, ctorArgs, cancellationToken);
+
+            var typeO = await _typeMappings.GetMappingAsync(typeI, cancellationToken, isWaitIfNotFound);
+            typeO = EnsureNotNull(typeO, typeI);
+
+            return await InstantiateObjectImplAsync(typeI, typeO, ctorArgs, cancellationToken);
+        }
+
+        /// <summary>
+        ///     1.
+        /// </summary>
+        private async Task<T> ResolveAsyncImpl<T>(Object[] ctorArgs,
+                                                  CancellationToken cancellationToken,
+                                                  Boolean isWaitIfNotFound)
+        {
+            var typeI = typeof(T);
+
+            var res = await PerformObjectResolutionAsync(typeI, ctorArgs,
+                cancellationToken, isWaitIfNotFound);
+
+            switch (res)
+            {
+                case T good:
+                    return good;
+
+                default:
+                    throw new InvalidCastException();
+            }
+        }
+
+        private readonly ConcurrentDictionary<Type, Task<Object>> _contractBuilders;
     }
-
-    
 }

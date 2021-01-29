@@ -10,10 +10,29 @@ namespace Container.Tests
     public class SynchronousTests
     {
         [Fact]
+        public void ResolveWithoutMapping()
+        {
+            var container = new BaseResolver();
+            container.ResolveTo<ILog, MegaLog>();
+            container.ResolveTo<ILogFileProvider, TestLogFileProvider>();
+            //container.ResolveTo<ILogSizeProvider, TestLogSizeProvider>();
+
+            //var testLogFileProvider = container.Resolve<ILogFileProvider>();
+            //var fi = testLogFileProvider.GetLogFile();
+            //Assert.NotNull(fi);
+
+            var testLogSizeProvider = container.Resolve<TestLogSizeProvider>();
+            Assert.NotNull(testLogSizeProvider);
+
+            var size = testLogSizeProvider!.GetLogSize();
+            Assert.True(size >= 0);
+        }
+
+        [Fact]
         public void SimpleLinearDependencies()
         {
             var container = new BaseResolver();
-            container.ResolveTo<ILog, NullLog>();
+            container.ResolveTo<ILog, MegaLog>();
             container.ResolveTo<ILogFileProvider, TestLogFileProvider>();
             container.ResolveTo<ILogSizeProvider, TestLogSizeProvider>();
 

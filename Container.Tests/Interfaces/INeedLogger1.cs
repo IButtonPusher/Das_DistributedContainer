@@ -3,8 +3,7 @@ using System.Threading.Tasks;
 
 namespace Container.Tests.Interfaces
 {
-    public interface IMegaLog : ILog
+    public interface INeedLogger1
     {
-        void LogEx(String text);
     }
 }

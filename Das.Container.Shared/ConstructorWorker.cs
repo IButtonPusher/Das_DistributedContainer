@@ -5,60 +5,82 @@ using System.Threading.Tasks;
 
 namespace Das.Container
 {
-    public class ConstructorWorker //: IEnumerable<ValueTuple<Int32, ParameterInfo>>
+    public class ConstructorWorker
     {
         public ConstructorWorker(ConstructorInfo ctor,
                                  Object?[] ctorParams)
         {
-            _ctor = ctor;
+            ConstructorBuilding = ctor;
             _ctorParams = ctorParams;
+            _brokenAtIndex = -1;
+            _lock = new Object();
         }
+
+        public ConstructorInfo ConstructorBuilding { get; }
 
         public IEnumerable<Tuple<Int32, ParameterInfo>> BuildValues()
         {
-            var prms = _ctor.GetParameters();
-
-            var providedParamIndex = 0;
-
-            _parameterValues = new Object?[prms.Length];
-
-            for (var c = 0; c < prms.Length; c++)
+            lock (_lock)
             {
-                Object? pObj;
+                var prms = ConstructorBuilding.GetParameters();
 
-                var pType = prms[c].ParameterType;
-                if (providedParamIndex < _ctorParams.Length &&
-                    pType.IsInstanceOfType(_ctorParams[providedParamIndex]))
+                var providedParamIndex = 0;
+
+                _parameterValues = new Object?[prms.Length];
+
+
+                for (var c = 0; c < prms.Length; c++)
                 {
-                    pObj = _ctorParams[providedParamIndex++];
+                    if (_brokenAtIndex >= 0)
+                        yield break;
 
-                    switch (pObj)
+                    var pType = prms[c].ParameterType;
+                    if (providedParamIndex < _ctorParams.Length &&
+                        pType.IsInstanceOfType(_ctorParams[providedParamIndex]))
                     {
-                        case null:
-                            throw new Exception($"Cannot resolve ctor parameter of type {pType}");
+                        var pObj = _ctorParams[providedParamIndex++];
+
+                        switch (pObj)
+                        {
+                            case null:
+                                throw new Exception($"Cannot resolve ctor parameter of type {pType}");
+                        }
+
+                        _parameterValues[c] = pObj;
                     }
 
-                    _parameterValues[c] = pObj;
+                    else
+                        yield return new Tuple<Int32, ParameterInfo>(c, prms[c]);
                 }
-
-                else
-                    yield return new Tuple<Int32, ParameterInfo>(c, prms[c]);
             }
         }
 
-        public Object?[] GetParameterValues()
+        public Object?[]? GetParameterValues()
         {
-            var args = GetParameterValuesImpl();
+            lock (_lock)
+            {
+                if (_brokenAtIndex >= 0)
+                    return default;
 
-            return args;
+                var args = GetParameterValuesImpl();
+
+                return args;
+            }
+        }
+
+        public void NotifyValueNotAvailable(Int32 index)
+        {
+            _brokenAtIndex = index;
         }
 
         public void SetValue(Int32 index,
                              Object? value)
         {
-            var args = GetParameterValuesImpl();
-
-            args[index] = value;
+            lock (_lock)
+            {
+                var args = GetParameterValuesImpl();
+                args[index] = value;
+            }
         }
 
         private Object?[] GetParameterValuesImpl()
@@ -69,8 +91,10 @@ namespace Das.Container
             return args;
         }
 
-        private readonly ConstructorInfo _ctor;
         private readonly Object?[] _ctorParams;
+
+        private readonly Object _lock;
+        private Int32 _brokenAtIndex;
         private Object?[]? _parameterValues;
     }
 }

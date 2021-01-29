@@ -8,9 +8,8 @@ namespace Das.Container
     {
         public MappingCompletionSource(CancellationToken cancellationToken)
             #if NET40
-            : base()
-        #else
-        : base(TaskCreationOptions.RunContinuationsAsynchronously)
+            #else
+            : base(TaskCreationOptions.RunContinuationsAsynchronously)
         #endif
         {
             cancellationToken.Register(OnTokenCancelled);

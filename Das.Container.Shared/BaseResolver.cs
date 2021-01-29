@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -29,8 +30,11 @@ namespace Das.Container
         {
             _defaultAsyncTimeout = defaultTimeout;
 
+            _contractBuilders = new ConcurrentDictionary<Type, Task<Object>>();
+
+            //_ctorArgsTasks = new ConcurrentDictionary<ConstructorInfo, TaskCompletionSource<Object?[]?>>();
             _typeMappings = new TypeMappingCollection<Type>();
-            __instanceMappings = new TypeMappingCollection<Object>();
+            _instanceMappings = new TypeMappingCollection<Object>();
 
 
             _emptyCtorParams = new Object[0];
@@ -71,15 +75,31 @@ namespace Das.Container
                                                       CancellationToken cancellationToken,
                                                       Boolean isWaitIfNotFound)
         {
-            var found = await __instanceMappings.GetMappingAsync(typeI, cancellationToken, isWaitIfNotFound);
+            var found = await _instanceMappings.GetMappingAsync(typeI, cancellationToken, isWaitIfNotFound);
+            // ReSharper disable once ConstantNullCoalescingCondition
+            found ??= await _instanceMappings.TryGetMappingByConcreteAsync(typeO, cancellationToken);
+
             found = ValidateTypes(found, typeI, typeO)!;
             return found;
         }
 
         private CancellationToken GetDefaultCancellationToken()
         {
+            if (_defaultAsyncTimeout == null)
+                return CancellationToken.None;
+
             #if NET40
-            return CancellationToken.None;
+            var source = new CancellationTokenSource();
+            var timer = new Timer(self => {
+                ((Timer)self).Dispose();
+                try {
+                    source.Cancel();
+                } catch (ObjectDisposedException) {}
+            });
+            timer.Change((Int32)_defaultAsyncTimeout.Value.TotalMilliseconds, -1);
+            return source.Token;
+            
+            //return CancellationToken.None;
             #else
 
             return _defaultAsyncTimeout == null
@@ -87,15 +107,13 @@ namespace Das.Container
                 : new CancellationTokenSource(_defaultAsyncTimeout.Value).Token;
 
             #endif
-
-
         }
 
         private Boolean TryGetContained(Type typeI,
                                         Type typeO,
                                         out Object found)
         {
-            found = __instanceMappings.GetMapping(typeI);
+            found = _instanceMappings.GetMapping(typeI);
             found = ValidateTypes(found, typeI, typeO)!;
 
             return found != null;
@@ -116,11 +134,11 @@ namespace Das.Container
             return default;
         }
 
-        protected readonly TypeMappingCollection<Object> __instanceMappings;
-
-
-        private readonly TypeMappingCollection<Type> _typeMappings;
+        //private readonly ConcurrentDictionary<ConstructorInfo, TaskCompletionSource<Object?[]?>> _ctorArgsTasks;
         private readonly TimeSpan? _defaultAsyncTimeout;
-        private readonly Object[] _emptyCtorParams;
+        protected readonly Object[] _emptyCtorParams;
+
+        protected readonly TypeMappingCollection<Object> _instanceMappings;
+        private readonly TypeMappingCollection<Type> _typeMappings;
     }
 }
