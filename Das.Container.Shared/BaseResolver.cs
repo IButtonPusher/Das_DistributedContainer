@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,7 +29,8 @@ namespace Das.Container
         {
             _defaultAsyncTimeout = defaultTimeout;
 
-            _contractBuilders = new ConcurrentDictionary<Type, Task<Object>>();
+            //_contractBuilders = new ConcurrentDictionary<Type, Task<Object>>();
+            _contractBuilders2 = new ConcurrentDictionary<Type, IDeferredLoader>();
 
             //_ctorArgsTasks = new ConcurrentDictionary<ConstructorInfo, TaskCompletionSource<Object?[]?>>();
             _typeMappings = new TypeMappingCollection<Type>();
@@ -40,35 +40,83 @@ namespace Das.Container
             _emptyCtorParams = new Object[0];
         }
 
-        private static ConstructorInfo GetConstructor(Type typeO)
+        private static Boolean TryGetConstructor(Type typeO,
+                                                 out ConstructorInfo ctor)
         {
             var ctors = typeO.GetConstructors();
-
-            ConstructorInfo? ctor;
-
-            if (ctors.Length != 1)
+            if (ctors.Length == 1)
             {
-                var dCtors = from c in ctors
-                    let attrs = c.GetCustomAttributes(
-                        typeof(ContainerConstructorAttribute),
-                        true).FirstOrDefault()
-                    where c != null
-                    select c;
+                ctor = ctors[0];
+                return true;
+            }
 
-                ctor = dCtors.FirstOrDefault();
+            ctor = default!;
 
-                // !4.0
-                //ctor = ctors.FirstOrDefault(c => c.GetCustomAttribute<ContainerConstructorAttribute>() != null);
+            for (var c = 0; c < ctors.Length; c++)
+            {
+                var current = ctors[c];
+                var attribs = current.GetCustomAttributes(
+                    typeof(ContainerConstructorAttribute), true);
+                if (attribs.Length == 0)
+                    continue;
 
                 if (ctor == null)
-                    throw new InvalidOperationException(
-                        $"{typeO} must have exactly one accessible constructor or one of the constructors must be decorated with ContainerConstructorAttribute");
+                    ctor = current;
+                else
+                    return false; //we have more than one with the attribute.  Fail
             }
-            else
-                ctor = ctors[0];
+
+            return ctor != null;
+        }
+
+        private static ConstructorInfo GetConstructor(Type typeO)
+        {
+            if (!TryGetConstructor(typeO, out var ctor))
+                throw new InvalidOperationException(
+                    $"{typeO} must have exactly one accessible constructor or one of the constructors must be decorated with ContainerConstructorAttribute");
 
             return ctor;
+
+            //var ctors = typeO.GetConstructors();
+
+            //ConstructorInfo? ctor;
+
+            //if (ctors.Length != 1)
+            //{
+            //    var dCtors = from c in ctors
+            //        let attrs = c.GetCustomAttributes(
+            //            typeof(ContainerConstructorAttribute),
+            //            true).FirstOrDefault()
+            //        where c != null
+            //        select c;
+
+            //    ctor = dCtors.FirstOrDefault();
+
+            //    // !4.0
+            //    //ctor = ctors.FirstOrDefault(c => c.GetCustomAttribute<ContainerConstructorAttribute>() != null);
+
+            //    if (ctor == null)
+            //        throw new InvalidOperationException(
+            //            $"{typeO} must have exactly one accessible constructor or one of the constructors must be decorated with ContainerConstructorAttribute");
+            //}
+            //else
+            //    ctor = ctors[0];
+
+            //return ctor;
         }
+
+        //private async Task<Object?> GetContainedAsync(Type contractType,
+        //                                              CancellationToken cancellationToken,
+        //                                              Boolean isWaitIfNotFound)
+        //{
+        //    var typeO = await _typeMappings.GetMappingAsync(contractType, cancellationToken, 
+        //        isWaitIfNotFound);
+
+        //    if (typeO == null)
+        //        return default;
+
+        //    return await GetContainedAsync(contractType, typeO, cancellationToken, isWaitIfNotFound);
+        //}
 
         private async Task<Object?> GetContainedAsync(Type typeI,
                                                       Type typeO,
@@ -79,7 +127,7 @@ namespace Das.Container
             // ReSharper disable once ConstantNullCoalescingCondition
             found ??= await _instanceMappings.TryGetMappingByConcreteAsync(typeO, cancellationToken);
 
-            found = ValidateTypes(found, typeI, typeO)!;
+            found = Util.ValidateTypes(found, typeI, typeO)!;
             return found;
         }
 
@@ -114,25 +162,25 @@ namespace Das.Container
                                         out Object found)
         {
             found = _instanceMappings.GetMapping(typeI);
-            found = ValidateTypes(found, typeI, typeO)!;
+            found = Util.ValidateTypes(found, typeI, typeO)!;
 
             return found != null;
         }
 
-        private static Object? ValidateTypes(Object? found,
-                                             Type ti,
-                                             Type to)
-        {
-            if (found != null)
-                return found;
+        //private static Object? ValidateTypes(Object? found,
+        //                                     Type ti,
+        //                                     Type to)
+        //{
+        //    if (found != null)
+        //        return found;
 
-            if (to.IsAbstract || to.IsInterface)
-                throw new InvalidOperationException("Unable to map " +
-                                                    ti.Name + " to " +
-                                                    to.Name + " - it is not an instantiable type");
+        //    if (to.IsAbstract || to.IsInterface)
+        //        throw new InvalidOperationException("Unable to map " +
+        //                                            ti.Name + " to " +
+        //                                            to.Name + " - it is not an instantiable type");
 
-            return default;
-        }
+        //    return default;
+        //}
 
         //private readonly ConcurrentDictionary<ConstructorInfo, TaskCompletionSource<Object?[]?>> _ctorArgsTasks;
         private readonly TimeSpan? _defaultAsyncTimeout;

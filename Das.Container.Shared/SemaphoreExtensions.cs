@@ -93,15 +93,52 @@ namespace Das.Container
             }
         }
 
+        public static async Task<TOutput> RunLockedFuncAsync<TInput1, TInput2, TOutput>(
+            this SemaphoreSlim semaphore,
+            Func<TInput1, TInput2, TOutput> func,
+            TInput1 input1,
+            TInput2 input2,
+            CancellationToken cancellationToken)
+        {
+            await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                return func(input1, input2);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        }
+
+        public static async Task<TOutput> RunLockedFuncAsync<TInput, TOutput>(
+            this SemaphoreSlim semaphore,
+            Func<TInput, TOutput> func,
+            TInput input,
+            CancellationToken cancellationToken)
+        {
+            await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                return func(input);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        }
+
 
         public static async Task<TOutput> RunLockedFuncAsync<TInput1, TInput2, TInput3, TInput4, TInput5, TOutput>(
             this SemaphoreSlim semaphore,
+            Func<TInput1, TInput2, TInput3, TInput4, TInput5, TOutput> func,
             TInput1 input1,
             TInput2 input2,
             TInput3 input3,
             TInput4 input4,
             TInput5 input5,
-            Func<TInput1, TInput2, TInput3, TInput4, TInput5, TOutput> func,
             CancellationToken cancellationToken)
         {
             await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);

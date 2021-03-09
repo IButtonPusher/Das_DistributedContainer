@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>Das.Container</AssemblyName>
     <RootNamespace>Das.Container</RootNamespace>
-    <Version>0.0.12-alpha</Version>
+    <Version>0.0.13-alpha</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Claus Trappberger</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

@@ -18,7 +18,7 @@ namespace Das.Container
         {
             _typeMapLock = new SemaphoreSlim(1);
             _typeMappings = new Dictionary<Type, TValue>();
-            _waiters = new Dictionary<Type, List<MappingCompletionSource<TValue>>>();
+            _waiters = new Dictionary<Type, List<IDeferredLoader<TValue>>>();
         }
 
         public TValue GetMapping(Type typeI)
@@ -54,7 +54,7 @@ namespace Das.Container
 
                     if (!waiters.TryGetValue(ti, out var items))
                     {
-                        items = new List<MappingCompletionSource<TValue>>();
+                        items = new List<IDeferredLoader<TValue>>();
                         waiters.Add(ti, items);
                     }
 
@@ -90,7 +90,7 @@ namespace Das.Container
 
                     if (!waiters.TryGetValue(ti, out var items))
                     {
-                        items = new List<MappingCompletionSource<TValue>>();
+                        items = new List<IDeferredLoader<TValue>>();
                         waiters.Add(ti, items);
                     }
 
@@ -124,9 +124,9 @@ namespace Das.Container
                                                   Boolean isThrowIfFailed,
                                                   CancellationToken cancellationToken)
         {
-            var found = await _typeMapLock.RunLockedFuncAsync(_typeMappings,
-                typeI, value, isThrowIfFailed, _waiters,
-                SetMappingImpl, cancellationToken);
+            var found = await _typeMapLock.RunLockedFuncAsync(SetMappingImpl,
+                _typeMappings, typeI, value, isThrowIfFailed, _waiters,
+                cancellationToken);
 
             return found;
         }
@@ -164,11 +164,23 @@ namespace Das.Container
             }
         }
 
+        public async Task<IDeferredLoader?> TryGetWaiterAsync(Type type,
+                                                              CancellationToken cancellationToken)
+        {
+            return await _typeMapLock.RunLockedFuncAsync((w, t) =>
+            {
+                if (w.TryGetValue(t, out var res) && res.Count > 0)
+                    return res[0];
+
+                return default;
+            }, _waiters, type, cancellationToken);
+        }
+
         private static TValue SetMappingImpl(Dictionary<Type, TValue> objs,
                                              Type ti,
                                              TValue value,
                                              Boolean isThrowIfFailed,
-                                             Dictionary<Type, List<MappingCompletionSource<TValue>>> waiters)
+                                             Dictionary<Type, List<IDeferredLoader<TValue>>> waiters)
         {
             if (objs.TryGetValue(ti, out var foundMapping))
             {
@@ -219,6 +231,6 @@ namespace Das.Container
 
 
         private readonly Dictionary<Type, TValue> _typeMappings;
-        private readonly Dictionary<Type, List<MappingCompletionSource<TValue>>> _waiters;
+        private readonly Dictionary<Type, List<IDeferredLoader<TValue>>> _waiters;
     }
 }

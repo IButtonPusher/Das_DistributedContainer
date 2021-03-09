@@ -50,16 +50,25 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsynchronousTests.cs" />
+    <Compile Include="Implementations\CannotCtor.cs" />
     <Compile Include="Implementations\Logger.cs" />
     <Compile Include="Implementations\MegaLog.cs" />
     <Compile Include="Implementations\NeedLogger1.cs" />
     <Compile Include="Implementations\NeedMegaLogger.cs" />
+    <Compile Include="Implementations\NeedsCannotCtor.cs" />
+    <Compile Include="Implementations\NeedSlowly1.cs" />
+    <Compile Include="Implementations\NeedSlowly2.cs" />
+    <Compile Include="Implementations\SlowLoader.cs" />
     <Compile Include="Implementations\TestLogFileProvider.cs" />
     <Compile Include="Implementations\TestLogSizeProvider.cs" />
+    <Compile Include="Interfaces\ICannotAutoCtor.cs" />
+    <Compile Include="Interfaces\ILoadSlowly.cs" />
     <Compile Include="Interfaces\ILog.cs" />
     <Compile Include="Interfaces\ILogFileProvider.cs" />
     <Compile Include="Interfaces\ILogSizeProvider.cs" />
     <Compile Include="Interfaces\IMegaLog.cs" />
+    <Compile Include="Interfaces\INeedLoadSlowly1.cs" />
+    <Compile Include="Interfaces\INeedLoadSlowly2.cs" />
     <Compile Include="Interfaces\INeedLogger1.cs" />
     <Compile Include="Interfaces\INeedMegaLogger.cs" />
     <Compile Include="SynchronousTests.cs" />

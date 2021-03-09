@@ -7,7 +7,7 @@ namespace Das.Container.Invocations
     {
         private readonly Type _contractType;
 
-        public InstanceCompletionSource(IPollyFunc<Task<Object>> builder,
+        public InstanceCompletionSource(IPollyFunc<Task<Object?>> builder,
                                         Type contractType)
             #if !NET40
             : base(TaskCreationOptions.RunContinuationsAsynchronously)
@@ -18,7 +18,7 @@ namespace Das.Container.Invocations
             building.ContinueWith(OnBuilt);
         }
 
-        private void OnBuilt(Task<Object> promise)
+        private void OnBuilt(Task<Object?> promise)
         {
             if (promise.IsFaulted)
             {
@@ -30,10 +30,13 @@ namespace Das.Container.Invocations
             if (promise.IsCanceled)
             {
                 SetException(new Exception("Unable to resolve contract: " + _contractType));
+                return;
                 //SetCanceled();
             }
 
-            else SetResult(promise.Result);
+            var res = promise.Result;
+            if (res != default)
+                SetResult(res);
         }
     }
 }

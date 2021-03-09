@@ -46,32 +46,41 @@ namespace Das.Container
         /// <summary>
         ///     Specifies a concrete type to resolve an interface against.  No object of the type is provided
         /// </summary>
-        /// <typeparam name="TInterface">The type the seeded object can be loaded with</typeparam>
+        /// <typeparam name="TContract">The type the seeded object can be loaded with</typeparam>
         /// <typeparam name="TObject">The type of the object being seeded</typeparam>
-        void ResolveTo<TInterface, TObject>()
-            where TObject : class, TInterface;
+        void ResolveTo<TContract, TObject>()
+            where TObject : class, TContract;
 
         /// <summary>
-        ///     Seeds an existing object of type TObject mapped to type TInterface
+        ///     Seeds an existing object of type TObject mapped to type TContract
         /// </summary>
-        /// <typeparam name="TInterface">The type the seeded object can be loaded with</typeparam>
+        /// <typeparam name="TContract">The type the seeded object can be loaded with</typeparam>
         /// <param name="instance">The object being seeded</param>
-        void ResolveTo<TInterface>(TInterface instance);
+        void ResolveTo<TContract>(TContract instance);
 
         /// <summary>
         ///     Specifies a concrete type to resolve an interface against.  No object of the type is provided
         /// </summary>
-        /// <typeparam name="TInterface">The type the seeded object can be loaded with</typeparam>
+        /// <typeparam name="TContract">The type the seeded object can be loaded with</typeparam>
         /// <typeparam name="TObject">The type of the object being seeded</typeparam>
-        Task ResolveToAsync<TInterface, TObject>()
-            where TObject : class, TInterface;
+        Task ResolveToAsync<TContract, TObject>()
+            where TObject : class, TContract;
 
         /// <summary>
-        ///     Seeds an existing object mapped to type TInterface
+        ///     Specifies a concrete type to resolve an interface against.  No object of the type is provided
         /// </summary>
-        /// <typeparam name="TInterface">The type the seeded object can be loaded with</typeparam>
+        /// <typeparam name="TContract">The type the seeded object can be loaded with</typeparam>
+        /// <typeparam name="TObject">The type of the object being seeded</typeparam>
+        Task ResolveToAsync<TContract, TObject>(TObject instance)
+            where TObject : class, TContract;
+
+        /// <summary>
+        ///     Seeds an existing object mapped to type TContract
+        /// </summary>
+        /// <typeparam name="TInstance">The type the seeded object can be loaded with.
+        /// Can be the actual type or a base class/interface</typeparam>
         /// <param name="instance">The object being seeded</param>
-        Task ResolveToAsync<TInterface>(TInterface instance);
+        Task ResolveToAsync<TInstance>(TInstance instance);
 
         Boolean TryResolve<TInstance>(Type type,
                                       out TInstance resolved);

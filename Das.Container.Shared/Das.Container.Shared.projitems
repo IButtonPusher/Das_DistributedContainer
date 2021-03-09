@@ -13,10 +13,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)BaseResolver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConstructorWorker.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ContainerConstructorAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IDeferredLoader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Invocations\InstanceCompletionSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Invocations\IPollyAction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Invocations\IPollyAction{T}.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Invocations\IPollyFunc{T}.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Invocations\IPollyPromise.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Invocations\PollyAction{T2}.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Invocations\PollyFunc{T1TR}.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Invocations\PollyFunc{T2TR}.cs" />
@@ -24,10 +26,15 @@
     <Compile Include="$(MSBuildThisFileDirectory)Invocations\PollyLateAction{T2}.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Invocations\PollyAction{T}.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Invocations\PollyLateAction{T4}.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Query\AsyncLookup.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Query\AsyncRegister.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NewInstanceBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LoadAheadResolver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MappingCompletionSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TypeMappingCollection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SemaphoreExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SyncResolver.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Waiters\ParamValueWaiter.cs" />
   </ItemGroup>
 </Project>
