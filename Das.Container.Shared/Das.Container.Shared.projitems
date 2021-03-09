@@ -9,12 +9,12 @@
     <Import_RootNamespace>Das.Container</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)AsyncResolver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BaseResolver.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Construction\IObjectBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConstructorWorker.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ContainerConstructorAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DefaultCtorBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IDeferredLoader.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Invocations\InstanceCompletionSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Invocations\IPollyAction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Invocations\IPollyAction{T}.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Invocations\IPollyFunc{T}.cs" />

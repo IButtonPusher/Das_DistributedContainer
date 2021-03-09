@@ -20,7 +20,6 @@ namespace Das.Container
         public void NotifyOfLoad(Object obj,
                                  Type contractType)
         {
-            
         }
 
         async Task<Object> IDeferredLoader.GetAwaiter()

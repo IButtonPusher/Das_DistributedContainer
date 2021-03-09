@@ -66,7 +66,6 @@ namespace Das.Container
                 return false;
             }
 
-            //resolved = ResolveImpl<TInstance>(type, typeO, _emptyCtorParams);
             var oresolved = ResolveObjectImpl(type, typeO, _emptyCtorParams);
 
             if (oresolved is TInstance good)
@@ -77,7 +76,6 @@ namespace Das.Container
 
             resolved = default!;
             return false;
-            //return resolved != null;
         }
 
         protected Object? ResolveObjectImpl(Type typeI,

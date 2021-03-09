@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>Das.Container</AssemblyName>
     <RootNamespace>Das.Container</RootNamespace>
-    <Version>0.0.13-alpha</Version>
+    <Version>0.0.14-alpha</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Claus Trappberger</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -17,7 +17,7 @@
   <Import Project="..\Das.Container.Shared\Das.Container.Shared.projitems" Label="Shared" />
 
   <ItemGroup>
-    <PackageReference Include="Das.Container.Interfaces" Version="0.0.8-alpha" />
+    <PackageReference Include="Das.Container.Interfaces" Version="0.0.10-alpha" />
   </ItemGroup>
 
 </Project>

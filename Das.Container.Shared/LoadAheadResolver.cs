@@ -10,7 +10,6 @@ namespace Das.Container
             base.ResolveTo<TInterface, TObject>();
 
             ResolveObjectImpl(typeof(TInterface), typeof(TObject), _emptyCtorParams);
-            //ResolveObjectImpl(typeI, typeO, ctorParams);
         }
     }
 }

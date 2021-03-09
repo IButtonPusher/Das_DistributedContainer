@@ -167,7 +167,8 @@ namespace Das.Container
         public async Task<IDeferredLoader?> TryGetWaiterAsync(Type type,
                                                               CancellationToken cancellationToken)
         {
-            return await _typeMapLock.RunLockedFuncAsync((w, t) =>
+            return await _typeMapLock.RunLockedFuncAsync((w,
+                                                          t) =>
             {
                 if (w.TryGetValue(t, out var res) && res.Count > 0)
                     return res[0];

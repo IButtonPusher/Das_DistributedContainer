@@ -12,17 +12,17 @@ namespace Container.Tests.Implementations
         public SlowLoader()
         {
             if (Interlocked.Add(ref _instances, 1) > 1)
-                throw new DuplicateNameException();   
-        }
-
-        public static void Reset()
-        {
-            Interlocked.Exchange(ref _instances, 0);
+                throw new DuplicateNameException();
         }
 
         public async Task InitializeAsync()
         {
             await Task.Delay(5000);
+        }
+
+        public static void Reset()
+        {
+            Interlocked.Exchange(ref _instances, 0);
         }
 
         private static Int32 _instances;

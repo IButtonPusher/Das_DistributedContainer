@@ -4,12 +4,29 @@ using Container.Tests.Implementations;
 using Container.Tests.Interfaces;
 using Das.Container;
 using Xunit;
+
 // ReSharper disable All
 
 namespace Container.Tests
 {
     public class SynchronousTests
     {
+        [Fact]
+        public void DuplicateInstantiation()
+        {
+            SlowLoader.Reset();
+
+            var container = new BaseResolver(TimeSpan.FromSeconds(10));
+            container.ResolveTo<IResolver>(container);
+
+            container.ResolveTo<ILoadSlowly, SlowLoader>();
+            container.ResolveTo<INeedLoadSlowly2, NeedSlowly2>();
+            container.ResolveTo<INeedLoadSlowly1, NeedSlowly1>();
+
+            var load1 = container.Resolve<INeedLoadSlowly1>();
+            var load2 = container.Resolve<INeedLoadSlowly2>();
+        }
+
         [Fact]
         public void ResolveWithoutMapping()
         {
@@ -46,23 +63,6 @@ namespace Container.Tests
 
             var size = testLogSizeProvider!.GetLogSize();
             Assert.True(size >= 0);
-        }
-
-        [Fact]
-        public void DuplicateInstantiation()
-        {
-            SlowLoader.Reset();
-
-            var container = new BaseResolver(TimeSpan.FromSeconds(10));
-            container.ResolveTo<IResolver>(container);
-
-            container.ResolveTo<ILoadSlowly, SlowLoader>();
-            container.ResolveTo<INeedLoadSlowly2, NeedSlowly2>();
-            container.ResolveTo<INeedLoadSlowly1, NeedSlowly1>();
-
-            var load1 = container.Resolve<INeedLoadSlowly1>();
-            var load2 = container.Resolve<INeedLoadSlowly2>();
-            
         }
     }
 }

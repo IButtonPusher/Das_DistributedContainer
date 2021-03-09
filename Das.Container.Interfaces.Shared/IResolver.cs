@@ -77,8 +77,10 @@ namespace Das.Container
         /// <summary>
         ///     Seeds an existing object mapped to type TContract
         /// </summary>
-        /// <typeparam name="TInstance">The type the seeded object can be loaded with.
-        /// Can be the actual type or a base class/interface</typeparam>
+        /// <typeparam name="TInstance">
+        ///     The type the seeded object can be loaded with.
+        ///     Can be the actual type or a base class/interface
+        /// </typeparam>
         /// <param name="instance">The object being seeded</param>
         Task ResolveToAsync<TInstance>(TInstance instance);
 

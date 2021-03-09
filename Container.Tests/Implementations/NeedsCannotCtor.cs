@@ -6,14 +6,13 @@ namespace Container.Tests.Implementations
 {
     public class NeedsCannotCtor
     {
-        public Boolean IsFinished { get; private set; }
-
         public NeedsCannotCtor(IResolver resolver)
         {
-
             var promise = resolver.ResolveAsync<CannotCtor>();
             promise.ContinueWith(OnPromiseKept);
         }
+
+        public Boolean IsFinished { get; private set; }
 
         private void OnPromiseKept(Task<CannotCtor> obj)
         {

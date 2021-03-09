@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Container.Tests.Interfaces;
+
 // ReSharper disable All
 
 namespace Container.Tests.Implementations
