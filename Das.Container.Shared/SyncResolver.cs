@@ -60,7 +60,7 @@ namespace Das.Container
                                              out TInstance resolved)
         {
             var typeO = _typeMappings.GetMapping(type);
-            if (typeO == null)
+            if (typeO == null!)
             {
                 resolved = default!;
                 return false;
@@ -128,7 +128,7 @@ namespace Das.Container
                 var pType = missing.Item2.ParameterType;
                 var mapping = _typeMappings.GetMapping(pType);
 
-                if (mapping == null && !isThrowOnMissingMapping)
+                if (mapping == null! && !isThrowOnMissingMapping)
                     return default;
 
                 var pMap = EnsureNotNull(mapping, pType);

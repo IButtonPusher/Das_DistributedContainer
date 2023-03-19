@@ -20,4 +20,19 @@ namespace Das.Container.Invocations
             _action(input1, _input2);
         }
     }
+
+    public readonly struct PollyLateAction<TInput> : IPollyAction<TInput>
+    {
+        private readonly Action<TInput> _action;
+
+        public PollyLateAction(Action<TInput> action)
+        {
+            _action = action;
+        }
+
+        public void Execute(TInput input1)
+        {
+            _action(input1);
+        }
+    }
 }

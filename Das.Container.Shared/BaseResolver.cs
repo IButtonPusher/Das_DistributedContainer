@@ -52,7 +52,8 @@ namespace Das.Container
                                                       Boolean isWaitIfNotFound)
         {
             var found = await _instanceMappings.GetMappingAsync(typeI, cancellationToken, isWaitIfNotFound);
-            // ReSharper disable once ConstantNullCoalescingCondition
+            
+            // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
             found ??= await _instanceMappings.TryGetMappingByConcreteAsync(typeO, cancellationToken);
 
             found = Util.ValidateTypes(found, typeI, typeO)!;
@@ -105,13 +106,13 @@ namespace Das.Container
                 if (attribs.Length == 0)
                     continue;
 
-                if (ctor == null)
+                if (ctor == null!)
                     ctor = current;
                 else
                     return false; //we have more than one with the attribute.  Fail
             }
 
-            return ctor != null;
+            return ctor != null!;
         }
 
         private Boolean TryGetContained(Type typeI,
@@ -121,7 +122,7 @@ namespace Das.Container
             found = _instanceMappings.GetMapping(typeI);
             found = Util.ValidateTypes(found, typeI, typeO)!;
 
-            return found != null;
+            return found != null!;
         }
 
         private readonly ConcurrentDictionary<Type, IObjectBuilder> _contractBuilders;

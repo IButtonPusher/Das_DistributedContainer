@@ -167,14 +167,28 @@ namespace Das.Container
         public async Task<IDeferredLoader?> TryGetWaiterAsync(Type type,
                                                               CancellationToken cancellationToken)
         {
-            return await _typeMapLock.RunLockedFuncAsync((w,
-                                                          t) =>
-            {
-                if (w.TryGetValue(t, out var res) && res.Count > 0)
-                    return res[0];
 
-                return default;
-            }, _waiters, type, cancellationToken);
+           await _typeMapLock.WaitAsync();
+           try
+           {
+              if (_waiters.TryGetValue(type, out var res) && res.Count > 0)
+                 return res[0];
+
+              return default;
+           }
+           finally
+           {
+              _typeMapLock.Release();
+           }
+
+            //return await _typeMapLock.RunLockedFuncAsync((w,
+            //                                              t) =>
+            //{
+            //    if (w.TryGetValue(t, out var res) && res.Count > 0)
+            //        return res[0];
+
+            //    return default;
+            //}, _waiters, type, cancellationToken);
         }
 
         private static TValue SetMappingImpl(Dictionary<Type, TValue> objs,

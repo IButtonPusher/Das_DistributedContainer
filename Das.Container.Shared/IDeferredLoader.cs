@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Das.Container
 {
-    public interface IDeferredLoader<TValue> : IDeferredLoader
+    public interface IDeferredLoader<in TValue> : IDeferredLoader
     {
         Boolean TrySetResult(TValue value);
     }
