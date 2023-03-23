@@ -32,6 +32,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Invocations\PollyLateAction{T2}.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Invocations\PollyAction{T}.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Invocations\PollyLateAction{T4}.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Invocations\PollyLateFunc{T2Tout}.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Invocations\PollyLateFunc{TInTout}.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Query\AsyncLookup.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Query\AsyncRegister.cs" />
