@@ -85,51 +85,7 @@ public class TypeMappingCollection<TValue>
       return s.Task;
    }
 
-   //// ReSharper disable once UnusedMember.Global
-   //public async Task<TValue> GetMappingByConcreteAsync(Type typeo,
-   //                                                    CancellationToken cancellationToken)
-   //{
-   //   try
-   //   {
-   //      var found = await _typeMapLock.RunLockedFuncAsync(
-   //         _typeMappings, typeo, _waiters, cancellationToken,
-   //         (objs,
-   //          ti,
-   //          waiters,
-   //          ct) =>
-   //         {
-   //            if (TryGetMappingImpl(objs, ti, out var foundMapping))
-   //               return TaskEx.FromResult(foundMapping);
-
-   //            foreach (var kvp in objs)
-   //            {
-   //               if (kvp.Value != null &&
-   //                   ti.IsInstanceOfType(kvp.Value))
-   //                  return TaskEx.FromResult(kvp.Value);
-   //            }
-
-   //            if (!waiters.TryGetValue(ti, out var items))
-   //            {
-   //               items = new List<IDeferredLoader<TValue>>();
-   //               waiters.Add(ti, items);
-   //            }
-
-   //            var s = new MappingCompletionSource<TValue>(ct);
-
-   //            items.Add(s);
-
-   //            return s.Task;
-   //         }, cancellationToken).ConfigureAwait(false);
-
-
-   //      return found;
-   //   }
-   //   catch (TaskCanceledException x)
-   //   {
-   //      throw new TypeLoadException("Unable to resolve an object of type " + typeo, x);
-   //   }
-   //}
-
+  
    public TValue SetMapping(Type typeI,
                             TValue value,
                             Boolean isThrowIfFailed) =>

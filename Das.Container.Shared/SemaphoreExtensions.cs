@@ -95,110 +95,6 @@ public static class SemaphoreExtensions
       }
    }
 
-   //public static async Task<TOutput> RunLockedFuncAsync<TInput1, TInput2, TInput3, TInput4, TOutput>(
-   //   this SemaphoreSlim semaphore,
-   //   TInput1 input1,
-   //   TInput2 input2,
-   //   TInput3 input3,
-   //   TInput4 input4,
-   //   Func<TInput1, TInput2, TInput3, TInput4, TOutput> func,
-   //   CancellationToken cancellationToken)
-   //{
-   //   await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-   //   try
-   //   {
-   //      return func(input1, input2, input3, input4);
-   //   }
-   //   finally
-   //   {
-   //      semaphore.Release();
-   //   }
-   //}
-
-
-   //public static async Task<TOutput> RunLockedTaskAsync<TInput1, TInput2, TInput3, TInput4, TOutput>(
-   //   this SemaphoreSlim semaphore,
-   //   TInput1 input1,
-   //   TInput2 input2,
-   //   TInput3 input3,
-   //   TInput4 input4,
-   //   Func<TInput1, TInput2, TInput3, TInput4, Task<TOutput>> func,
-   //   CancellationToken cancellationToken)
-   //{
-   //   await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-   //   try
-   //   {
-   //      return await func(input1, input2, input3, input4).ConfigureAwait(false);
-   //   }
-   //   finally
-   //   {
-   //      semaphore.Release();
-   //   }
-   //}
-
-
-   //public static async Task<TOutput> RunLockedFuncAsync<TInput1, TInput2, TInput3, TOutput>(
-   //   this SemaphoreSlim semaphore,
-   //   TInput1 input1,
-   //   TInput2 input2,
-   //   TInput3 input3,
-   //   Func<TInput1, TInput2, TInput3, TOutput> func,
-   //   CancellationToken cancellationToken)
-   //{
-   //   await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-   //   try
-   //   {
-   //      return func(input1, input2, input3);
-   //   }
-   //   finally
-   //   {
-   //      semaphore.Release();
-   //   }
-   //}
-
-
-   //public static async Task<TOutput> RunLockedTaskAsync<TInput1, TInput2, TInput3, TOutput>(
-   //   this SemaphoreSlim semaphore,
-   //   TInput1 input1,
-   //   TInput2 input2,
-   //   TInput3 input3,
-   //   Func<TInput1, TInput2, TInput3, Task<TOutput>> func,
-   //   CancellationToken cancellationToken)
-   //{
-   //   await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-   //   try
-   //   {
-   //      return await func(input1, input2, input3).ConfigureAwait(false);
-   //   }
-   //   finally
-   //   {
-   //      semaphore.Release();
-   //   }
-   //}
-
-   //public static async Task<TOutput> RunLockedFuncAsync<TInput1, TInput2, TOutput>(
-   //   this SemaphoreSlim semaphore,
-   //   Func<TInput1, TInput2, TOutput> func,
-   //   TInput1 input1,
-   //   TInput2 input2,
-   //   CancellationToken cancellationToken)
-   //{
-   //   await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-   //   try
-   //   {
-   //      return func(input1, input2);
-   //   }
-   //   finally
-   //   {
-   //      semaphore.Release();
-   //   }
-   //}
-
 
    public static async Task<TOutput> RunLockedTaskAsync<TInput1, TInput2, TOutput>(
       this SemaphoreSlim semaphore,
@@ -218,24 +114,6 @@ public static class SemaphoreExtensions
          semaphore.Release();
       }
    }
-
-   //public static async Task<TOutput> RunLockedFuncAsync<TInput, TOutput>(
-   //   this SemaphoreSlim semaphore,
-   //   Func<TInput, TOutput> func,
-   //   TInput input,
-   //   CancellationToken cancellationToken)
-   //{
-   //   await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-   //   try
-   //   {
-   //      return func(input);
-   //   }
-   //   finally
-   //   {
-   //      semaphore.Release();
-   //   }
-   //}
 
 
    public static async Task<TOutput> RunLockedFuncAsync<TInput1, TInput2, TInput3, TInput4, TInput5, TOutput>(

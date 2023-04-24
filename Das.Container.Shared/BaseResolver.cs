@@ -77,8 +77,7 @@ public partial class BaseResolver
             });
             timer.Change((Int32)_defaultAsyncTimeout.Value.TotalMilliseconds, -1);
             return source.Token;
-            
-            //return CancellationToken.None;
+
       #else
 
       return _defaultAsyncTimeout == null
