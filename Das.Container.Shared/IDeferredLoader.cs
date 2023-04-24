@@ -1,21 +1,20 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace Das.Container
+namespace Das.Container;
+
+public interface IDeferredLoader<in TValue> : IDeferredLoader
 {
-    public interface IDeferredLoader<in TValue> : IDeferredLoader
-    {
-        Boolean TrySetResult(TValue value);
-    }
+   Boolean TrySetResult(TValue value);
+}
 
-    public interface IDeferredLoader
-    {
-        Task<Object> GetAwaiter();
+public interface IDeferredLoader
+{
+   Task<Object> GetAwaiter();
 
-        /// <summary>
-        ///     If this loader has a dependency on T then this may indirectly set the result
-        /// </summary>
-        void NotifyOfLoad(Object obj,
-                          Type contractType);
-    }
+   /// <summary>
+   ///     If this loader has a dependency on T then this may indirectly set the result
+   /// </summary>
+   void NotifyOfLoad(Object obj,
+                     Type contractType);
 }

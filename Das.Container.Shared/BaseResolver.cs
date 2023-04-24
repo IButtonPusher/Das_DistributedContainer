@@ -34,7 +34,12 @@ public partial class BaseResolver
       _instanceMappings = new TypeMappingCollection<Object>();
 
 
-      _emptyCtorParams = new Object[0];
+      _emptyCtorParams =
+         #if NET40
+         new Object[0];
+         #else
+         Array.Empty<Object>();
+      #endif
    }
 
    private static ConstructorInfo GetConstructor(Type typeO)

@@ -3,98 +3,97 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace Das.Container
+namespace Das.Container;
+
+public class ConstructorWorker
 {
-    public class ConstructorWorker
-    {
-        public ConstructorWorker(ConstructorInfo ctor,
-                                 Object?[] ctorParams)
-        {
-            ConstructorBuilding = ctor;
-            _ctorParams = ctorParams;
-            _brokenAtIndex = -1;
-            _lock = new Object();
-        }
+   public ConstructorWorker(ConstructorInfo ctor,
+                            Object?[] ctorParams)
+   {
+      ConstructorBuilding = ctor;
+      _ctorParams = ctorParams;
+      _brokenAtIndex = -1;
+      _lock = new Object();
+   }
 
-        public ConstructorInfo ConstructorBuilding { get; }
+   public ConstructorInfo ConstructorBuilding { get; }
 
-        public IEnumerable<Tuple<Int32, ParameterInfo>> BuildValues()
-        {
-            lock (_lock)
+   public IEnumerable<Tuple<Int32, ParameterInfo>> BuildValues()
+   {
+      lock (_lock)
+      {
+         var prms = ConstructorBuilding.GetParameters();
+
+         var providedParamIndex = 0;
+
+         _parameterValues = new Object?[prms.Length];
+
+
+         for (var c = 0; c < prms.Length; c++)
+         {
+            if (_brokenAtIndex >= 0)
+               yield break;
+
+            var pType = prms[c].ParameterType;
+            if (providedParamIndex < _ctorParams.Length &&
+                pType.IsInstanceOfType(_ctorParams[providedParamIndex]))
             {
-                var prms = ConstructorBuilding.GetParameters();
+               var pObj = _ctorParams[providedParamIndex++];
 
-                var providedParamIndex = 0;
+               switch (pObj)
+               {
+                  case null:
+                     throw new Exception($"Cannot resolve ctor parameter of type {pType}");
+               }
 
-                _parameterValues = new Object?[prms.Length];
-
-
-                for (var c = 0; c < prms.Length; c++)
-                {
-                    if (_brokenAtIndex >= 0)
-                        yield break;
-
-                    var pType = prms[c].ParameterType;
-                    if (providedParamIndex < _ctorParams.Length &&
-                        pType.IsInstanceOfType(_ctorParams[providedParamIndex]))
-                    {
-                        var pObj = _ctorParams[providedParamIndex++];
-
-                        switch (pObj)
-                        {
-                            case null:
-                                throw new Exception($"Cannot resolve ctor parameter of type {pType}");
-                        }
-
-                        _parameterValues[c] = pObj;
-                    }
-
-                    else
-                        yield return new Tuple<Int32, ParameterInfo>(c, prms[c]);
-                }
+               _parameterValues[c] = pObj;
             }
-        }
 
-        public Object?[]? GetParameterValues()
-        {
-            lock (_lock)
-            {
-                if (_brokenAtIndex >= 0)
-                    return default;
+            else
+               yield return new Tuple<Int32, ParameterInfo>(c, prms[c]);
+         }
+      }
+   }
 
-                var args = GetParameterValuesImpl();
+   public Object?[]? GetParameterValues()
+   {
+      lock (_lock)
+      {
+         if (_brokenAtIndex >= 0)
+            return default;
 
-                return args;
-            }
-        }
+         var args = GetParameterValuesImpl();
 
-        public void NotifyValueNotAvailable(Int32 index)
-        {
-            _brokenAtIndex = index;
-        }
+         return args;
+      }
+   }
 
-        public void SetValue(Int32 index,
-                             Object? value)
-        {
-            lock (_lock)
-            {
-                var args = GetParameterValuesImpl();
-                args[index] = value;
-            }
-        }
+   public void NotifyValueNotAvailable(Int32 index)
+   {
+      _brokenAtIndex = index;
+   }
 
-        private Object?[] GetParameterValuesImpl()
-        {
-            if (!(_parameterValues is { } args))
-                throw new InvalidOperationException("Call " + nameof(BuildValues) + " first");
+   public void SetValue(Int32 index,
+                        Object? value)
+   {
+      lock (_lock)
+      {
+         var args = GetParameterValuesImpl();
+         args[index] = value;
+      }
+   }
 
-            return args;
-        }
+   private Object?[] GetParameterValuesImpl()
+   {
+      if (!(_parameterValues is { } args))
+         throw new InvalidOperationException("Call " + nameof(BuildValues) + " first");
 
-        private readonly Object?[] _ctorParams;
+      return args;
+   }
 
-        private readonly Object _lock;
-        private Int32 _brokenAtIndex;
-        private Object?[]? _parameterValues;
-    }
+   private readonly Object?[] _ctorParams;
+
+   private readonly Object _lock;
+   private Int32 _brokenAtIndex;
+   private Object?[]? _parameterValues;
 }
