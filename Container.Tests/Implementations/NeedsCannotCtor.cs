@@ -2,29 +2,28 @@
 using System.Threading.Tasks;
 using Das.Container;
 
-namespace Container.Tests.Implementations
+namespace Container.Tests.Implementations;
+
+public class NeedsCannotCtor
 {
-    public class NeedsCannotCtor
-    {
-        public NeedsCannotCtor(IResolver resolver)
-        {
-            var promise = resolver.ResolveAsync<CannotCtor>();
-            promise.ContinueWith(OnPromiseKept);
-        }
+   public NeedsCannotCtor(IResolver resolver)
+   {
+      var promise = resolver.ResolveAsync<CannotCtor>();
+      promise.ContinueWith(OnPromiseKept);
+   }
 
-        public Boolean IsFinished { get; private set; }
+   public Boolean IsFinished { get; private set; }
 
-        private void OnPromiseKept(Task<CannotCtor> obj)
-        {
-            if (!obj.IsCompleted)
-                throw new Exception();
+   private void OnPromiseKept(Task<CannotCtor> obj)
+   {
+      if (!obj.IsCompleted)
+         throw new Exception();
 
-            var res = obj.Result;
+      var res = obj.Result;
 
-            if (res == null)
-                throw new Exception();
+      if (res == null)
+         throw new Exception();
 
-            IsFinished = true;
-        }
-    }
+      IsFinished = true;
+   }
 }

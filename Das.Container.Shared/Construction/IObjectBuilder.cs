@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace Das.Container.Construction
+namespace Das.Container.Construction;
+
+public interface IObjectBuilder : IDeferredLoader
 {
-    public interface IObjectBuilder : IDeferredLoader
-    {
-        void BeginBuilding();
-    }
+   void BeginBuilding();
 }

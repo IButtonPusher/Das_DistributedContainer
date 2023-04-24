@@ -10,242 +10,248 @@ using TaskEx = System.Threading.Tasks.Task;
 // ReSharper disable ClassWithVirtualMembersNeverInherited.Global
 #endif
 
-namespace Das.Container
+namespace Das.Container;
+
+public class TypeMappingCollection<TValue>
 {
-    public class TypeMappingCollection<TValue>
-    {
-        public TypeMappingCollection()
-        {
-            _typeMapLock = new SemaphoreSlim(1);
-            _typeMappings = new Dictionary<Type, TValue>();
-            _waiters = new Dictionary<Type, List<IDeferredLoader<TValue>>>();
-        }
+   public TypeMappingCollection()
+   {
+      _typeMapLock = new SemaphoreSlim(1);
+      _typeMappings = new Dictionary<Type, TValue>();
+      _waiters = new Dictionary<Type, List<IDeferredLoader<TValue>>>();
+   }
 
-        public TValue GetMapping(Type typeI)
-        {
-            var found = _typeMapLock.RunLockedFunc(_typeMappings, typeI, (objs,
-                                                                          ti) =>
-            {
-                if (TryGetMappingImpl(objs, ti, out var foundMapping))
-                    return foundMapping;
+   public TValue GetMapping(Type typeI)
+   {
+      var found = _typeMapLock.RunLockedFunc(_typeMappings, typeI, (objs,
+                                                                    ti) =>
+      {
+         if (TryGetMappingImpl(objs, ti, out var foundMapping))
+            return foundMapping;
 
-                return default;
-            });
+         return default;
+      });
 
-            return found!;
-        }
+      return found!;
+   }
 
-        public async Task<TValue> GetMappingAsync(Type typeI,
-                                                  CancellationToken cancellationToken,
-                                                  Boolean isWaitIfNotFound)
-        {
-            var found = await _typeMapLock.RunLockedFuncAsync(
-                _typeMappings, typeI, isWaitIfNotFound, _waiters,
-                (objs,
-                 ti,
-                 wait,
-                 waiters) =>
-                {
-                    if (TryGetMappingImpl(objs, ti, out var foundMapping))
-                        return TaskEx.FromResult(foundMapping);
+   public async Task<TValue> GetMappingAsync(Type typeI,
+                                             CancellationToken cancellationToken,
+                                             Boolean isWaitIfNotFound)
+   {
+      if (isWaitIfNotFound)
+      {
+         var found = await _typeMapLock.RunLockedFuncAsync(
+                                          _typeMappings, typeI, isWaitIfNotFound, _waiters,
+                                          cancellationToken, GetMappingImpl, cancellationToken)
+                                       .ConfigureAwait(false);
 
-                    if (!wait)
-                        return TaskEx.FromResult<TValue>(default!);
+         return await found.ConfigureAwait(false);
+      }
 
-                    if (!waiters.TryGetValue(ti, out var items))
-                    {
-                        items = new List<IDeferredLoader<TValue>>();
-                        waiters.Add(ti, items);
-                    }
+      else
+      {
+         var found = await _typeMapLock.RunLockedTaskAsync(
+                                          _typeMappings, typeI, isWaitIfNotFound, _waiters,
+                                          cancellationToken, GetMappingImpl, cancellationToken)
+                                       .ConfigureAwait(false);
 
-                    var s = new MappingCompletionSource<TValue>(cancellationToken);
+         return found;
+      }
+   }
 
-                    items.Add(s);
+   private static Task<TValue> GetMappingImpl(Dictionary<Type, TValue> objs,
+                                       Type ti,
+                                       Boolean wait,
+                                       Dictionary<Type, List<IDeferredLoader<TValue>>> waiters,
+                                       CancellationToken ct)
+   {
+      if (TryGetMappingImpl(objs, ti, out var foundMapping))
+         return TaskEx.FromResult(foundMapping);
 
-                    return s.Task;
-                }, cancellationToken);
+      if (!wait)
+         return TaskEx.FromResult<TValue>(default!);
 
-            return await found;
-        }
+      if (!waiters.TryGetValue(ti, out var items))
+      {
+         items = new List<IDeferredLoader<TValue>>();
+         waiters.Add(ti, items);
+      }
 
-        // ReSharper disable once UnusedMember.Global
-        public async Task<TValue> GetMappingByConcreteAsync(Type typeo,
-                                                            CancellationToken cancellationToken)
-        {
-            var found = await _typeMapLock.RunLockedFuncAsync(
-                _typeMappings, typeo, _waiters,
-                (objs,
-                 ti,
-                 waiters) =>
-                {
-                    if (TryGetMappingImpl(objs, ti, out var foundMapping))
-                        return TaskEx.FromResult(foundMapping);
+      var s = new MappingCompletionSource<TValue>(ct);
 
-                    foreach (var kvp in objs)
-                    {
-                        if (kvp.Value != null &&
-                            ti.IsInstanceOfType(kvp.Value))
-                            return TaskEx.FromResult(kvp.Value);
-                    }
+      items.Add(s);
 
-                    if (!waiters.TryGetValue(ti, out var items))
-                    {
-                        items = new List<IDeferredLoader<TValue>>();
-                        waiters.Add(ti, items);
-                    }
+      return s.Task;
+   }
 
-                    var s = new MappingCompletionSource<TValue>(cancellationToken);
+   //// ReSharper disable once UnusedMember.Global
+   //public async Task<TValue> GetMappingByConcreteAsync(Type typeo,
+   //                                                    CancellationToken cancellationToken)
+   //{
+   //   try
+   //   {
+   //      var found = await _typeMapLock.RunLockedFuncAsync(
+   //         _typeMappings, typeo, _waiters, cancellationToken,
+   //         (objs,
+   //          ti,
+   //          waiters,
+   //          ct) =>
+   //         {
+   //            if (TryGetMappingImpl(objs, ti, out var foundMapping))
+   //               return TaskEx.FromResult(foundMapping);
 
-                    items.Add(s);
+   //            foreach (var kvp in objs)
+   //            {
+   //               if (kvp.Value != null &&
+   //                   ti.IsInstanceOfType(kvp.Value))
+   //                  return TaskEx.FromResult(kvp.Value);
+   //            }
 
-                    return s.Task;
-                }, cancellationToken);
+   //            if (!waiters.TryGetValue(ti, out var items))
+   //            {
+   //               items = new List<IDeferredLoader<TValue>>();
+   //               waiters.Add(ti, items);
+   //            }
 
-            try
-            {
-                return await found;
-            }
-            catch (TaskCanceledException x)
-            {
-                throw new TypeLoadException("Unable to resolve an object of type " + typeo, x);
-            }
-        }
+   //            var s = new MappingCompletionSource<TValue>(ct);
 
-        public TValue SetMapping(Type typeI,
-                                 TValue value,
-                                 Boolean isThrowIfFailed)
-        {
-            return _typeMapLock.RunLockedFunc(_typeMappings, typeI, value,
-                isThrowIfFailed, _waiters, SetMappingImpl);
-        }
+   //            items.Add(s);
 
-        public async Task<TValue> SetMappingAsync(Type typeI,
-                                                  TValue value,
-                                                  Boolean isThrowIfFailed,
-                                                  CancellationToken cancellationToken)
-        {
-            var found = await _typeMapLock.RunLockedFuncAsync(SetMappingImpl,
-                _typeMappings, typeI, value, isThrowIfFailed, _waiters,
-                cancellationToken);
-
-            return found;
-        }
+   //            return s.Task;
+   //         }, cancellationToken).ConfigureAwait(false);
 
 
-        public async Task<TValue> TryGetMappingByConcreteAsync(Type typeo,
-                                                               CancellationToken cancellationToken)
-        {
-            var found = await _typeMapLock.RunLockedFuncAsync(
-                _typeMappings, typeo, _waiters,
-                (objs,
-                 ti,
-                 _) =>
-                {
-                    if (TryGetMappingImpl(objs, ti, out var foundMapping))
-                        return TaskEx.FromResult(foundMapping);
+   //      return found;
+   //   }
+   //   catch (TaskCanceledException x)
+   //   {
+   //      throw new TypeLoadException("Unable to resolve an object of type " + typeo, x);
+   //   }
+   //}
 
-                    foreach (var kvp in objs)
-                    {
-                        if (kvp.Value != null &&
-                            ti.IsInstanceOfType(kvp.Value))
-                            return TaskEx.FromResult(kvp.Value);
-                    }
+   public TValue SetMapping(Type typeI,
+                            TValue value,
+                            Boolean isThrowIfFailed) =>
+      _typeMapLock.RunLockedFunc(_typeMappings, typeI, value,
+         isThrowIfFailed, _waiters, SetMappingImpl);
 
-                    return TaskEx.FromResult<TValue>(default!);
-                }, cancellationToken);
-
-            try
-            {
-                return await found;
-            }
-            catch (TaskCanceledException x)
-            {
-                throw new TypeLoadException("Unable to resolve an object of type " + typeo, x);
-            }
-        }
-
-        public async Task<IDeferredLoader?> TryGetWaiterAsync(Type type,
-                                                              CancellationToken cancellationToken)
-        {
-
-           await _typeMapLock.WaitAsync();
-           try
-           {
-              if (_waiters.TryGetValue(type, out var res) && res.Count > 0)
-                 return res[0];
-
-              return default;
-           }
-           finally
-           {
-              _typeMapLock.Release();
-           }
-
-            //return await _typeMapLock.RunLockedFuncAsync((w,
-            //                                              t) =>
-            //{
-            //    if (w.TryGetValue(t, out var res) && res.Count > 0)
-            //        return res[0];
-
-            //    return default;
-            //}, _waiters, type, cancellationToken);
-        }
-
-        private static TValue SetMappingImpl(Dictionary<Type, TValue> objs,
-                                             Type ti,
+   public async Task<TValue> SetMappingAsync(Type typeI,
                                              TValue value,
                                              Boolean isThrowIfFailed,
-                                             Dictionary<Type, List<IDeferredLoader<TValue>>> waiters)
-        {
-            if (objs.TryGetValue(ti, out var foundMapping))
-            {
-                if (isThrowIfFailed)
-                    throw new InvalidOperationException($"{ti} already maps to {foundMapping}");
-                return foundMapping;
-            }
+                                             CancellationToken cancellationToken)
+   {
+      var found = await _typeMapLock.RunLockedFuncAsync(SetMappingImpl,
+                                       _typeMappings, typeI, value, isThrowIfFailed, _waiters,
+                                       cancellationToken)
+                                    .ConfigureAwait(false);
 
-            objs.Add(ti, value);
-
-            if (waiters.TryGetValue(ti, out var waiting))
-            {
-                waiters.Remove(ti);
-                foreach (var hardestPart in waiting)
-                {
-                    hardestPart.TrySetResult(value);
-                }
-            }
-
-            return value;
-        }
+      return found;
+   }
 
 
-        private static Boolean TryGetMappingImpl(Dictionary<Type, TValue> objs,
-                                                 Type ti,
-                                                 out TValue foundMapping)
-        {
-            if (objs.TryGetValue(ti, out foundMapping))
-                return true;
-            foundMapping = default!;
+   public async Task<TValue> TryGetMappingByConcreteAsync(Type typeo,
+                                                          CancellationToken cancellationToken)
+   {
+      try
+      {
+         var found = await _typeMapLock.RunLockedTaskAsync(
+            _typeMappings, typeo, TryGetMappingByConcreteImpl, cancellationToken);
 
-            foreach (var kvp in objs)
-            {
-                if (ti.IsAssignableFrom(kvp.Key))
-                {
-                    foundMapping = kvp.Value;
-                    break;
-                }
-            }
+         return found;
+      }
+      catch (TaskCanceledException x)
+      {
+         throw new TypeLoadException("Unable to resolve an object of type " + typeo, x);
+      }
+   }
 
-            if (foundMapping != null)
-                objs.Add(ti, foundMapping);
+   private static Task<TValue> TryGetMappingByConcreteImpl(Dictionary<Type, TValue> objs,
+                                                           Type ti)
+   {
+      if (TryGetMappingImpl(objs, ti, out var foundMapping))
+         return TaskEx.FromResult(foundMapping);
 
-            return foundMapping != null;
-        }
+      foreach (var kvp in objs)
+      {
+         if (kvp.Value != null &&
+             ti.IsInstanceOfType(kvp.Value))
+            return TaskEx.FromResult(kvp.Value);
+      }
 
-        private readonly SemaphoreSlim _typeMapLock;
+      return TaskEx.FromResult<TValue>(default!);
+   }
+
+   public async Task<IDeferredLoader?> TryGetWaiterAsync(Type type)
+   {
+      await _typeMapLock.WaitAsync().ConfigureAwait(false);
+      try
+      {
+         if (_waiters.TryGetValue(type, out var res) && res.Count > 0)
+            return res[0];
+
+         return default;
+      }
+      finally
+      {
+         _typeMapLock.Release();
+      }
+   }
+
+   private static TValue SetMappingImpl(Dictionary<Type, TValue> objs,
+                                        Type ti,
+                                        TValue value,
+                                        Boolean isThrowIfFailed,
+                                        Dictionary<Type, List<IDeferredLoader<TValue>>> waiters)
+   {
+      if (objs.TryGetValue(ti, out var foundMapping))
+      {
+         if (isThrowIfFailed)
+            throw new InvalidOperationException($"{ti} already maps to {foundMapping}");
+         return foundMapping;
+      }
+
+      objs.Add(ti, value);
+
+      if (waiters.TryGetValue(ti, out var waiting))
+      {
+         waiters.Remove(ti);
+         foreach (var hardestPart in waiting)
+         {
+            hardestPart.TrySetResult(value);
+         }
+      }
+
+      return value;
+   }
 
 
-        private readonly Dictionary<Type, TValue> _typeMappings;
-        private readonly Dictionary<Type, List<IDeferredLoader<TValue>>> _waiters;
-    }
+   private static Boolean TryGetMappingImpl(Dictionary<Type, TValue> objs,
+                                            Type ti,
+                                            out TValue foundMapping)
+   {
+      if (objs.TryGetValue(ti, out foundMapping))
+         return true;
+      foundMapping = default!;
+
+      foreach (var kvp in objs)
+      {
+         if (ti.IsAssignableFrom(kvp.Key))
+         {
+            foundMapping = kvp.Value;
+            break;
+         }
+      }
+
+      if (foundMapping != null)
+         objs.Add(ti, foundMapping);
+
+      return foundMapping != null;
+   }
+
+   private readonly SemaphoreSlim _typeMapLock;
+
+
+   private readonly Dictionary<Type, TValue> _typeMappings;
+   private readonly Dictionary<Type, List<IDeferredLoader<TValue>>> _waiters;
 }

@@ -12,60 +12,62 @@ using TaskEx = System.Threading.Tasks.Task;
 // ReSharper disable ClassWithVirtualMembersNeverInherited.Global
 #endif
 
-namespace Das.Container
+namespace Das.Container;
+
+// ReSharper disable once UnusedType.Global
+public partial class BaseResolver
 {
-    // ReSharper disable once UnusedType.Global
-    public partial class BaseResolver
-    {
-        public BaseResolver(TimeSpan defaultAsyncTimeout)
-            : this((TimeSpan?) defaultAsyncTimeout)
-        {
-        }
+   public BaseResolver(TimeSpan defaultAsyncTimeout)
+      : this((TimeSpan?)defaultAsyncTimeout)
+   {
+   }
 
-        public BaseResolver() : this(null)
-        {
-        }
+   public BaseResolver() : this(null)
+   {
+   }
 
-        private BaseResolver(TimeSpan? defaultTimeout)
-        {
-            _defaultAsyncTimeout = defaultTimeout;
-            _contractBuilders = new ConcurrentDictionary<Type, IObjectBuilder>();
-            _typeMappings = new TypeMappingCollection<Type>();
-            _instanceMappings = new TypeMappingCollection<Object>();
+   private BaseResolver(TimeSpan? defaultTimeout)
+   {
+      _defaultAsyncTimeout = defaultTimeout;
+      _contractBuilders = new ConcurrentDictionary<Type, IObjectBuilder>();
+      _typeMappings = new TypeMappingCollection<Type>();
+      _instanceMappings = new TypeMappingCollection<Object>();
 
 
-            _emptyCtorParams = new Object[0];
-        }
+      _emptyCtorParams = new Object[0];
+   }
 
-        private static ConstructorInfo GetConstructor(Type typeO)
-        {
-            if (!TryGetConstructor(typeO, out var ctor))
-                throw new InvalidOperationException(
-                    $"{typeO} must have exactly one accessible constructor or one of the constructors must be decorated with ContainerConstructorAttribute");
+   private static ConstructorInfo GetConstructor(Type typeO)
+   {
+      if (!TryGetConstructor(typeO, out var ctor))
+         throw new InvalidOperationException(
+            $"{typeO} must have exactly one accessible constructor or one of the constructors must be decorated with ContainerConstructorAttribute");
 
-            return ctor;
-        }
+      return ctor;
+   }
 
-        private async Task<Object?> GetContainedAsync(Type typeI,
-                                                      Type typeO,
-                                                      CancellationToken cancellationToken,
-                                                      Boolean isWaitIfNotFound)
-        {
-            var found = await _instanceMappings.GetMappingAsync(typeI, cancellationToken, isWaitIfNotFound);
-            
-            // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
-            found ??= await _instanceMappings.TryGetMappingByConcreteAsync(typeO, cancellationToken);
+   private async Task<Object?> GetContainedAsync(Type typeI,
+                                                 Type typeO,
+                                                 CancellationToken cancellationToken,
+                                                 Boolean isWaitIfNotFound)
+   {
+      var found = await _instanceMappings.GetMappingAsync(typeI, cancellationToken, isWaitIfNotFound)
+                                         .ConfigureAwait(false);
 
-            found = Util.ValidateTypes(found, typeI, typeO)!;
-            return found;
-        }
+      // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+      found ??= await _instanceMappings.TryGetMappingByConcreteAsync(typeO, cancellationToken)
+                                       .ConfigureAwait(false);
 
-        private CancellationToken GetDefaultCancellationToken()
-        {
-            if (_defaultAsyncTimeout == null)
-                return CancellationToken.None;
+      found = Util.ValidateTypes(found, typeI, typeO)!;
+      return found;
+   }
 
-            #if NET40
+   private CancellationToken GetDefaultCancellationToken()
+   {
+      if (_defaultAsyncTimeout == null)
+         return CancellationToken.None;
+
+      #if NET40
             var source = new CancellationTokenSource();
             var timer = new Timer(self => {
                 ((Timer)self).Dispose();
@@ -77,60 +79,59 @@ namespace Das.Container
             return source.Token;
             
             //return CancellationToken.None;
-            #else
+      #else
 
-            return _defaultAsyncTimeout == null
-                ? CancellationToken.None
-                : new CancellationTokenSource(_defaultAsyncTimeout.Value).Token;
+      return _defaultAsyncTimeout == null
+         ? CancellationToken.None
+         : new CancellationTokenSource(_defaultAsyncTimeout.Value).Token;
 
-            #endif
-        }
+      #endif
+   }
 
-        private static Boolean TryGetConstructor(Type typeO,
-                                                 out ConstructorInfo ctor)
-        {
-            var ctors = typeO.GetConstructors();
-            if (ctors.Length == 1)
-            {
-                ctor = ctors[0];
-                return true;
-            }
+   private static Boolean TryGetConstructor(Type typeO,
+                                            out ConstructorInfo ctor)
+   {
+      var ctors = typeO.GetConstructors();
+      if (ctors.Length == 1)
+      {
+         ctor = ctors[0];
+         return true;
+      }
 
-            ctor = default!;
+      ctor = default!;
 
-            for (var c = 0; c < ctors.Length; c++)
-            {
-                var current = ctors[c];
-                var attribs = current.GetCustomAttributes(
-                    typeof(ContainerConstructorAttribute), true);
-                if (attribs.Length == 0)
-                    continue;
+      for (var c = 0; c < ctors.Length; c++)
+      {
+         var current = ctors[c];
+         var attribs = current.GetCustomAttributes(
+            typeof(ContainerConstructorAttribute), true);
+         if (attribs.Length == 0)
+            continue;
 
-                if (ctor == null!)
-                    ctor = current;
-                else
-                    return false; //we have more than one with the attribute.  Fail
-            }
+         if (ctor == null!)
+            ctor = current;
+         else
+            return false; //we have more than one with the attribute.  Fail
+      }
 
-            return ctor != null!;
-        }
+      return ctor != null!;
+   }
 
-        private Boolean TryGetContained(Type typeI,
-                                        Type typeO,
-                                        out Object found)
-        {
-            found = _instanceMappings.GetMapping(typeI);
-            found = Util.ValidateTypes(found, typeI, typeO)!;
+   private Boolean TryGetContained(Type typeI,
+                                   Type typeO,
+                                   out Object found)
+   {
+      found = _instanceMappings.GetMapping(typeI);
+      found = Util.ValidateTypes(found, typeI, typeO)!;
 
-            return found != null!;
-        }
+      return found != null!;
+   }
 
-        private readonly ConcurrentDictionary<Type, IObjectBuilder> _contractBuilders;
+   private readonly ConcurrentDictionary<Type, IObjectBuilder> _contractBuilders;
 
-        private readonly TimeSpan? _defaultAsyncTimeout;
-        protected readonly Object[] _emptyCtorParams;
+   private readonly TimeSpan? _defaultAsyncTimeout;
+   protected readonly Object[] _emptyCtorParams;
 
-        protected readonly TypeMappingCollection<Object> _instanceMappings;
-        private readonly TypeMappingCollection<Type> _typeMappings;
-    }
+   protected readonly TypeMappingCollection<Object> _instanceMappings;
+   private readonly TypeMappingCollection<Type> _typeMappings;
 }
